@@ -111,7 +111,14 @@ npm run dev
 ```
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 4. Build Production Bundle
+### 4. Interactive Codebase Floorplan (by haydenschmitty/floorplan)
+Explore an interactive visual map of Paisa's entire architecture, data flows, and health checks:
+```bash
+npm run floorplan
+```
+Opens the interactive node-graph map at [http://127.0.0.1:4378](http://127.0.0.1:4378) with plain-English walkthroughs, screen-first navigators, and guided flows.
+
+### 5. Build Production Bundle
 ```bash
 npm run build
 ```

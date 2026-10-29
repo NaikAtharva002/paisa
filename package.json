@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "floorplan": "node floorplan/serve.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.46.1",
