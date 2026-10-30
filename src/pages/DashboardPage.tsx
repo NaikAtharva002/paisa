@@ -16,12 +16,9 @@ import { UpcomingBillsCard } from '../components/dashboard/UpcomingBillsCard';
 import {
   Wallet,
   TrendingDown,
-  AlertCircle,
   PiggyBank,
-  ArrowUpRight,
-  Plus,
-  Shield,
-  HelpCircle,
+  AlertCircle,
+  CalendarDays,
 } from 'lucide-react';
 
 interface DashboardPageProps {
@@ -42,47 +39,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const recurring = store.getRecurringPayments();
 
   const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const todayStr = now.toISOString().slice(0, 10);
+  const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
-  // Filter today's transactions
-  const todayTransactions = transactions.filter(t => t.transaction_date.slice(0, 10) === todayStr);
-
-  // Month-to-date transactions
-  const currentMonthPrefix = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+  const todayTxs = transactions.filter(t => t.transaction_date.slice(0, 10) === todayStr);
   const mtdExpenses = transactions.filter(
-    t => isSpendingExpense(t) && t.transaction_date.startsWith(currentMonthPrefix)
+    t => isSpendingExpense(t) && t.transaction_date.startsWith(monthPrefix)
   );
-  const mtdSpendingTotal = mtdExpenses.reduce((sum, t) => sum + t.amount, 0);
+  const mtdTotal = mtdExpenses.reduce((s, t) => s + t.amount, 0);
 
-  // Daily budget resolution
   const dailyBudget = getEffectiveDailyBudget(profile, currentYear, currentMonth);
+  const report = calculateDailyReport(dailyBudget, todayTxs, todayStr, dailyBudget, currentTone);
 
-  // Generate complete daily reality report
-  const dailyReport = calculateDailyReport(
-    dailyBudget,
-    todayTransactions,
-    todayStr,
-    dailyBudget,
-    currentTone
-  );
+  const mtdPct = profile.monthly_spending_target
+    ? Math.min(100, (mtdTotal / profile.monthly_spending_target) * 100)
+    : null;
 
   return (
-    <div className="space-y-6">
-      
+    <div className="space-y-6 animate-fadeIn">
       {/* 3 IMMEDIATE CORE NUMBERS (Section 8 Requirement) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        {/* 1. Today's Spending */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="1. Today's Spending"
-          value={formatINR(dailyReport.actualSpending)}
-          subtitle={`${dailyReport.transactionCount} purchase${dailyReport.transactionCount !== 1 ? 's' : ''} logged today`}
+          value={formatINR(report.actualSpending)}
+          subtitle={`${report.transactionCount} transaction${report.transactionCount !== 1 ? 's' : ''} logged today`}
           icon={TrendingDown}
-          variant={dailyReport.status === 'overspent' ? 'danger' : 'default'}
+          variant={report.status === 'overspent' ? 'danger' : report.status === 'getting_close' ? 'warning' : 'default'}
         />
-
-        {/* 2. Today's Budget */}
         <StatCard
           title="2. Today's Budget"
           value={formatINR(dailyBudget)}
@@ -91,114 +76,99 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           variant="primary"
           badge={profile.budgeting_mode === 'income_equivalent' ? 'Income Equivalent' : 'Spendable'}
         />
-
-        {/* 3. Remaining Allowance or Overspending */}
         <StatCard
-          title={dailyReport.remainingAllowance >= 0 ? "3. Remaining Allowance" : "3. Overspending"}
-          value={dailyReport.remainingAllowance >= 0 
-            ? formatINR(dailyReport.remainingAllowance) 
-            : `-${formatINR(Math.abs(dailyReport.remainingAllowance))}`
+          title={report.remainingAllowance >= 0 ? "3. Remaining Allowance" : "3. Overspending"}
+          value={report.remainingAllowance >= 0
+            ? formatINR(report.remainingAllowance)
+            : `-${formatINR(Math.abs(report.remainingAllowance))}`
           }
-          subtitle={dailyReport.remainingAllowance >= 0 
-            ? `${100 - Math.min(100, dailyReport.percentUsed)}% daily cushion left` 
-            : `Exceeded target by ${Math.round((dailyReport.overspending / dailyBudget) * 100)}%`
+          subtitle={report.remainingAllowance >= 0
+            ? `${Math.round(100 - Math.min(100, report.percentUsed))}% daily cushion left`
+            : `Exceeded by ${Math.round((report.overspending / dailyBudget) * 100)}%`
           }
-          icon={dailyReport.remainingAllowance >= 0 ? PiggyBank : AlertCircle}
-          variant={dailyReport.remainingAllowance >= 0 ? 'success' : 'danger'}
+          icon={report.remainingAllowance >= 0 ? PiggyBank : AlertCircle}
+          variant={report.remainingAllowance >= 0 ? 'success' : 'danger'}
         />
       </div>
 
       {/* Main Dial & Nightly Reality Banner Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        
-        {/* Left: Circular Budget Dial */}
         <div className="lg:col-span-5 flex flex-col justify-center">
           <BudgetProgress
-            percentUsed={dailyReport.percentUsed}
-            status={dailyReport.status}
-            statusLabel={dailyReport.statusLabel}
+            percentUsed={report.percentUsed}
+            status={report.status}
+            statusLabel={report.statusLabel}
             dailyBudget={dailyBudget}
-            actualSpending={dailyReport.actualSpending}
-            remainingAllowance={dailyReport.remainingAllowance}
+            actualSpending={report.actualSpending}
+            remainingAllowance={report.remainingAllowance}
           />
         </div>
-
-        {/* Right: Daily Reality Check Banner */}
         <div className="lg:col-span-7 flex flex-col justify-center">
-          <DailyRealityBanner
-            report={dailyReport}
-            tone={currentTone}
-          />
+          <DailyRealityBanner report={report} tone={currentTone} />
         </div>
-
       </div>
 
-      {/* Timeline & Chart Side-by-Side */}
+      {/* Timeline & Velocity Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-        
-        {/* Chronological Spending Timeline */}
         <SpendingTimeline
-          transactions={todayTransactions}
+          transactions={todayTxs}
           dailyBudget={dailyBudget}
           onEditTransaction={onEditTransaction}
         />
-
-        {/* Cumulative Velocity Chart */}
         <CumulativeSpendingChart
-          transactions={todayTransactions}
+          transactions={todayTxs}
           dailyBudget={dailyBudget}
         />
-
       </div>
 
-      {/* Month-To-Date & Upcoming Bills Bar */}
+      {/* MTD Card + Upcoming Bills */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-        
-        {/* MTD Card */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 shadow-xl backdrop-blur-sm flex flex-col justify-between space-y-4">
+        {/* Month-to-Date */}
+        <div className="p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Month-to-Date Spending
-              </span>
-              <span className="text-xs font-mono-num text-slate-300">
-                {now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-              </span>
+              <span className="section-title text-slate-400">Month-to-Date Spending</span>
+              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                <CalendarDays className="w-3.5 h-3.5" />
+                <span>{now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono-num mt-1">
-              {formatINR(mtdSpendingTotal)}
+            <div className="text-3xl font-black font-mono-num text-slate-100 mt-2">
+              {formatINR(mtdTotal)}
             </div>
             {profile.monthly_spending_target && (
               <div className="text-xs text-slate-400 mt-1">
                 Target: {formatINR(profile.monthly_spending_target)} (
-                {formatINR(Math.max(0, profile.monthly_spending_target - mtdSpendingTotal))} remaining)
+                <span className={mtdTotal > profile.monthly_spending_target ? 'text-red-400' : 'text-emerald-400 font-semibold'}>
+                  {formatINR(Math.max(0, profile.monthly_spending_target - mtdTotal))} remaining
+                </span>)
               </div>
             )}
           </div>
 
-          <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full"
-              style={{
-                width: `${profile.monthly_spending_target ? Math.min(100, (mtdSpendingTotal / profile.monthly_spending_target) * 100) : 50}%`
-              }}
-            />
-          </div>
+          {/* Progress bar */}
+          {mtdPct !== null && (
+            <div className="space-y-1.5">
+              <div className="w-full h-2.5 bg-[#06091A] rounded-full overflow-hidden border border-white/[0.06]">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    mtdPct > 100 ? 'bg-red-500' : mtdPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, mtdPct)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-          <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+          <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-400">
             <span>Take-home: {formatINR(profile.monthly_income, false)}</span>
-            <span>Savings Target: {formatINR(profile.savings_target, false)}</span>
+            <span>Savings Target: {formatINR(profile.savings_target ?? 0, false)}</span>
           </div>
         </div>
 
         {/* Upcoming Bills */}
-        <UpcomingBillsCard
-          recurringPayments={recurring}
-          onViewAll={onNavigateToBills}
-        />
-
+        <UpcomingBillsCard recurringPayments={recurring} onViewAll={onNavigateToBills} />
       </div>
-
     </div>
   );
 };

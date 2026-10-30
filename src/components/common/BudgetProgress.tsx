@@ -1,7 +1,7 @@
 import React from 'react';
 import { BudgetStatus } from '../../types';
 import { formatINR } from '../../lib/calculations';
-import { AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, AlertCircle, Circle } from 'lucide-react';
 
 interface BudgetProgressProps {
   percentUsed: number;
@@ -13,6 +13,46 @@ interface BudgetProgressProps {
   variant?: 'circle' | 'bar';
 }
 
+const STATUS_CONFIG: Record<
+  BudgetStatus,
+  {
+    stroke: string;
+    glow: string;
+    tagClass: string;
+    textClass: string;
+    icon: React.ReactNode;
+  }
+> = {
+  comfortable: {
+    stroke: '#10B981',
+    glow: 'rgba(16,185,129,0.25)',
+    tagClass: 'tag-green',
+    textClass: 'text-emerald-400',
+    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+  },
+  getting_close: {
+    stroke: '#F59E0B',
+    glow: 'rgba(245,158,11,0.25)',
+    tagClass: 'tag-amber',
+    textClass: 'text-amber-400',
+    icon: <AlertTriangle className="w-3.5 h-3.5" />,
+  },
+  budget_reached: {
+    stroke: '#6366F1',
+    glow: 'rgba(99,102,241,0.25)',
+    tagClass: 'tag bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+    textClass: 'text-indigo-400',
+    icon: <Circle className="w-3.5 h-3.5" />,
+  },
+  overspent: {
+    stroke: '#EF4444',
+    glow: 'rgba(239,68,68,0.25)',
+    tagClass: 'tag-red',
+    textClass: 'text-red-400',
+    icon: <AlertCircle className="w-3.5 h-3.5" />,
+  },
+};
+
 export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   percentUsed,
   status,
@@ -22,58 +62,20 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   remainingAllowance,
   variant = 'circle',
 }) => {
-  const getStatusColor = () => {
-    switch (status) {
-      case 'comfortable':
-        return {
-          stroke: '#10B981', // emerald-500
-          bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-          track: 'stroke-emerald-950/40',
-          text: 'text-emerald-400',
-        };
-      case 'getting_close':
-        return {
-          stroke: '#F59E0B', // amber-500
-          bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-          track: 'stroke-amber-950/40',
-          text: 'text-amber-400',
-        };
-      case 'budget_reached':
-        return {
-          stroke: '#6366F1', // indigo-500
-          bg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-          track: 'stroke-indigo-950/40',
-          text: 'text-indigo-400',
-        };
-      case 'overspent':
-        return {
-          stroke: '#EF4444', // red-500
-          bg: 'bg-red-500/10 text-red-400 border-red-500/20',
-          track: 'stroke-red-950/40',
-          text: 'text-red-400',
-        };
-    }
-  };
-
-  const colors = getStatusColor();
+  const cfg = STATUS_CONFIG[status];
+  const clamped = Math.min(100, Math.max(0, percentUsed));
 
   if (variant === 'bar') {
-    const clampedWidth = Math.min(100, Math.max(0, percentUsed));
     return (
-      <div className="w-full space-y-2">
-        <div className="flex items-center justify-between text-xs font-medium">
-          <span className="text-slate-400">Budget Pacing</span>
-          <span className={`px-2 py-0.5 rounded-full border text-[11px] font-semibold ${colors.bg}`}>
-            {statusLabel} ({percentUsed}%)
-          </span>
+      <div className="w-full space-y-2.5">
+        <div className="flex items-center justify-between text-xs">
+          <span className="section-title">Budget Pacing</span>
+          <span className={`tag ${cfg.tagClass}`}>{statusLabel} · {percentUsed}%</span>
         </div>
-        <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/50">
+        <div className="w-full h-2.5 bg-[#06091A] rounded-full overflow-hidden border border-white/[0.06]">
           <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${clampedWidth}%`,
-              backgroundColor: colors.stroke,
-            }}
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${clamped}%`, backgroundColor: cfg.stroke }}
           />
         </div>
       </div>
@@ -81,84 +83,70 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   }
 
   // Circular dial
-  const radius = 62;
-  const strokeWidth = 10;
-  const circumference = 2 * Math.PI * radius;
-  // Clamp visually at 100% for circle ring length
-  const progressRatio = Math.min(100, Math.max(0, percentUsed)) / 100;
-  const strokeDashoffset = circumference - progressRatio * circumference;
+  const R = 64;
+  const SW = 10;
+  const C = 2 * Math.PI * R;
+  const offset = C - (clamped / 100) * C;
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900/90 to-slate-950/90 rounded-2xl border border-slate-800/80 shadow-xl relative overflow-hidden">
-      {/* Subtle glow behind dial */}
-      <div 
-        className="absolute w-44 h-44 rounded-full blur-3xl opacity-20 pointer-events-none"
-        style={{ backgroundColor: colors.stroke }}
+    <div className="relative flex flex-col items-center justify-center p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card overflow-hidden">
+      {/* Background ambient glow */}
+      <div
+        className="absolute w-44 h-44 rounded-full pointer-events-none opacity-20 blur-3xl transition-all duration-700"
+        style={{ background: cfg.glow, top: '-10%', left: '50%', transform: 'translateX(-50%)' }}
       />
 
-      <div className="relative flex items-center justify-center">
-        <svg className="w-48 h-48 -rotate-90 transform" viewBox="0 0 160 160">
+      {/* SVG Dial */}
+      <div className="relative z-10 flex items-center justify-center">
+        <svg width="180" height="180" viewBox="0 0 160 160" className="-rotate-90">
           {/* Background circle track */}
+          <circle cx="80" cy="80" r={R} fill="none" stroke="#111827" strokeWidth={SW} />
+          {/* Active progress arc */}
           <circle
             cx="80"
             cy="80"
-            r={radius}
-            className="stroke-slate-800/80"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
-          {/* Active progress track */}
-          <circle
-            cx="80"
-            cy="80"
-            r={radius}
-            stroke={colors.stroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
+            r={R}
+            fill="none"
+            stroke={cfg.stroke}
+            strokeWidth={SW}
+            strokeDasharray={C}
+            strokeDashoffset={offset}
             strokeLinecap="round"
-            fill="transparent"
             className="transition-all duration-700 ease-out"
+            style={{ filter: `drop-shadow(0 0 6px ${cfg.stroke}66)` }}
           />
         </svg>
 
         {/* Center content */}
-        <div className="absolute flex flex-col items-center text-center">
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400">
-            Used
-          </span>
-          <span className="text-3xl font-extrabold text-white font-mono-num">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Used</span>
+          <span className={`text-4xl font-black font-mono-num leading-none mt-0.5 ${cfg.textClass}`}>
             {percentUsed}%
           </span>
-          <div className={`mt-1 flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${colors.bg}`}>
-            {status === 'overspent' ? (
-              <AlertCircle className="w-3 h-3 text-red-400" />
-            ) : status === 'getting_close' ? (
-              <AlertTriangle className="w-3 h-3 text-amber-400" />
-            ) : (
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-            )}
-            {statusLabel}
-          </div>
+          <span className={`mt-2 tag ${cfg.tagClass} text-[10px]`}>
+            {cfg.icon} {statusLabel}
+          </span>
         </div>
       </div>
 
-      {/* Summary beneath dial */}
-      <div className="mt-4 grid grid-cols-2 gap-4 w-full text-center pt-3 border-t border-slate-800/60">
+      {/* Summary stats beneath dial */}
+      <div className="relative z-10 mt-5 pt-4 border-t border-white/[0.06] grid grid-cols-2 gap-4 w-full text-center">
         <div>
-          <div className="text-[11px] text-slate-400 font-medium">Spent Today</div>
-          <div className="text-base font-bold text-slate-100 font-mono-num">
-            {formatINR(actualSpending)}
-          </div>
+          <div className="section-title text-slate-400 mb-1">Spent Today</div>
+          <div className="text-base font-bold font-mono-num text-slate-100">{formatINR(actualSpending)}</div>
         </div>
         <div>
-          <div className="text-[11px] text-slate-400 font-medium">
-            {remainingAllowance >= 0 ? 'Remaining' : 'Over Limit'}
-          </div>
+          <div className="section-title text-slate-400 mb-1">{remainingAllowance >= 0 ? 'Remaining' : 'Over Limit'}</div>
           <div className={`text-base font-bold font-mono-num ${remainingAllowance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {formatINR(Math.abs(remainingAllowance))}
           </div>
         </div>
+      </div>
+
+      {/* Daily allowance footnote */}
+      <div className="relative z-10 mt-3 text-center">
+        <span className="text-[11px] text-slate-500">Daily budget allowance: </span>
+        <span className="text-[11px] font-bold font-mono-num text-slate-300">{formatINR(dailyBudget)}</span>
       </div>
     </div>
   );
