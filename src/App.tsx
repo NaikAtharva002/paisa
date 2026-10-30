@@ -18,8 +18,32 @@ import { AIInsightsView } from './components/analytics/AIInsightsView';
 import { RecurringPage } from './pages/RecurringPage';
 import { BankAccountsPage } from './pages/BankAccountsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ToastContainer } from './components/common/Toast';
+import { CommandPalette } from './components/common/CommandPalette';
+import { ShortcutsHelpModal } from './components/common/ShortcutsHelpModal';
 import { Transaction, RealityTone } from './types';
 import { CalendarDays, PieChart, Sparkles, Landmark, Settings as SettingsIcon, X } from 'lucide-react';
+
+const VALID_TABS: NavTab[] = [
+  'dashboard',
+  'transactions',
+  'budgets',
+  'goals',
+  'recurring',
+  'analytics',
+  'insights',
+  'bank',
+  'settings',
+];
+
+function getTabFromUrl(): NavTab {
+  if (typeof window === 'undefined') return 'dashboard';
+  const cleanPath = window.location.pathname.replace(/^\/+/, '').split('/')[0].toLowerCase();
+  if (VALID_TABS.includes(cleanPath as NavTab)) {
+    return cleanPath as NavTab;
+  }
+  return 'dashboard';
+}
 
 export function App() {
   // Listen for changes in the store to re-render reactively
@@ -32,8 +56,8 @@ export function App() {
   const user = store.getUser();
   const notifs = store.getNotificationPreferences();
 
-  // Navigation state
-  const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  // Navigation state (URL synced)
+  const [currentTab, setCurrentTab] = useState<NavTab>(() => getTabFromUrl());
   const [showLanding, setShowLanding] = useState(!isOnboarded);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
@@ -43,6 +67,8 @@ export function App() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
 
   // Reality check tone
   const [currentTone, setCurrentTone] = useState<RealityTone>(notifs.preferred_tone || 'friendly');
@@ -51,6 +77,102 @@ export function App() {
     setCurrentTone(tone);
     store.updateNotificationPreferences({ preferred_tone: tone });
   };
+
+  const handleSelectTab = (tab: NavTab) => {
+    setCurrentTab(tab);
+    if (typeof window !== 'undefined') {
+      const targetPath = tab === 'dashboard' ? '/' : `/${tab}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+  };
+
+  // Sync URL popstate (Back/Forward browser buttons)
+  useEffect(() => {
+    const onPopState = () => {
+      setCurrentTab(getTabFromUrl());
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+        return;
+      }
+
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setIsShortcutsHelpOpen(prev => !prev);
+        return;
+      }
+
+      if (
+        isCommandPaletteOpen ||
+        isShortcutsHelpOpen ||
+        isAddExpenseOpen ||
+        isCsvImportOpen ||
+        isNotificationsOpen
+      ) {
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setEditingTransaction(null);
+        setIsAddExpenseOpen(true);
+      } else if (e.key.toLowerCase() === 'b' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('budgets');
+      } else if (e.key.toLowerCase() === 'g' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('goals');
+      } else if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('transactions');
+      } else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('recurring');
+      } else if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('bank');
+      } else if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleSelectTab('settings');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isCommandPaletteOpen,
+    isShortcutsHelpOpen,
+    isAddExpenseOpen,
+    isCsvImportOpen,
+    isNotificationsOpen,
+  ]);
 
   // If user clicks "Get Started" from landing page
   if (showLanding && !showOnboarding) {
@@ -80,10 +202,18 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#181D26] flex flex-row selection:bg-[#F0D49C] selection:text-[#181D26]">
+      {/* Skip to Main Content (Accessibility) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 z-50 px-4 py-2 bg-[#181D26] text-white font-bold rounded-xl shadow-lg border border-[#EDE8E0] transition-transform"
+      >
+        Skip to main content
+      </a>
+
       {/* ── 1. Desktop Left Sidebar (Reference 2) ── */}
       <DesktopSidebar
         currentTab={currentTab}
-        onSelectTab={tab => setCurrentTab(tab)}
+        onSelectTab={handleSelectTab}
       />
 
       {/* ── 2. Main Content Viewport ── */}
@@ -95,13 +225,14 @@ export function App() {
             setIsAddExpenseOpen(true);
           }}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenSearch={() => setIsCommandPaletteOpen(true)}
           currentTone={currentTone}
           onChangeTone={handleChangeTone}
           displayName={user.display_name}
         />
 
         {/* Scrollable Page Body */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 pb-24 lg:pb-12">
+        <main id="main-content" tabIndex={-1} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 pb-24 lg:pb-12 focus:outline-hidden">
           {currentTab === 'dashboard' && (
             <DashboardPage
               onOpenAddExpense={() => {
@@ -113,14 +244,14 @@ export function App() {
                 setIsAddExpenseOpen(true);
               }}
               onOpenImport={() => setIsCsvImportOpen(true)}
-              onOpenInsights={() => setCurrentTab('insights')}
+              onOpenInsights={() => handleSelectTab('insights')}
               onEditTransaction={tx => {
                 setEditingTransaction(tx);
                 setIsAddExpenseOpen(true);
               }}
-              onNavigateToBills={() => setCurrentTab('recurring')}
-              onNavigateToBudgets={() => setCurrentTab('budgets')}
-              onNavigateToGoals={() => setCurrentTab('goals')}
+              onNavigateToBills={() => handleSelectTab('recurring')}
+              onNavigateToBudgets={() => handleSelectTab('budgets')}
+              onNavigateToGoals={() => handleSelectTab('goals')}
               currentTone={currentTone}
             />
           )}
@@ -147,7 +278,14 @@ export function App() {
 
           {currentTab === 'analytics' && <MonthlyReportView />}
 
-          {currentTab === 'insights' && <AIInsightsView />}
+          {currentTab === 'insights' && (
+            <AIInsightsView
+              onNavigateToBudgets={() => handleSelectTab('budgets')}
+              onNavigateToGoals={() => handleSelectTab('goals')}
+              onNavigateToBills={() => handleSelectTab('recurring')}
+              onNavigateToSettings={() => handleSelectTab('settings')}
+            />
+          )}
 
           {currentTab === 'bank' && <BankAccountsPage />}
 
@@ -161,7 +299,7 @@ export function App() {
               <h3 className="text-lg font-bold text-[#181D26]">Screen Not Found</h3>
               <p className="text-xs text-[#7F899F]">The section you are trying to view does not exist or has been relocated.</p>
               <button
-                onClick={() => setCurrentTab('dashboard')}
+                onClick={() => handleSelectTab('dashboard')}
                 className="btn-primary text-xs px-5 py-2.5"
               >
                 Return to Dashboard
@@ -174,7 +312,7 @@ export function App() {
       {/* ── 3. Mobile Bottom Bar Navigation (Reference 2) ── */}
       <BottomNav
         currentTab={currentTab}
-        onSelectTab={tab => setCurrentTab(tab)}
+        onSelectTab={handleSelectTab}
         onOpenMobileMenu={() => setIsMobileMoreOpen(true)}
       />
 
@@ -201,7 +339,7 @@ export function App() {
             <div className="grid grid-cols-2 gap-3 text-xs font-bold text-[#181D26]">
               <button
                 onClick={() => {
-                  setCurrentTab('recurring');
+                  handleSelectTab('recurring');
                   setIsMobileMoreOpen(false);
                 }}
                 className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
@@ -212,7 +350,7 @@ export function App() {
 
               <button
                 onClick={() => {
-                  setCurrentTab('analytics');
+                  handleSelectTab('analytics');
                   setIsMobileMoreOpen(false);
                 }}
                 className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
@@ -223,7 +361,7 @@ export function App() {
 
               <button
                 onClick={() => {
-                  setCurrentTab('insights');
+                  handleSelectTab('insights');
                   setIsMobileMoreOpen(false);
                 }}
                 className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
@@ -234,7 +372,7 @@ export function App() {
 
               <button
                 onClick={() => {
-                  setCurrentTab('bank');
+                  handleSelectTab('bank');
                   setIsMobileMoreOpen(false);
                 }}
                 className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
@@ -246,7 +384,7 @@ export function App() {
 
             <button
               onClick={() => {
-                setCurrentTab('settings');
+                handleSelectTab('settings');
                 setIsMobileMoreOpen(false);
               }}
               className="w-full py-3 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-bold text-[#181D26] flex items-center justify-center gap-2"
@@ -305,6 +443,33 @@ export function App() {
       >
         <NotificationCenter onClose={() => setIsNotificationsOpen(false)} />
       </Modal>
+
+      {/* ── 6. Global Command Palette & Shortcuts Help ── */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={tab => {
+          handleSelectTab(tab);
+          setIsCommandPaletteOpen(false);
+        }}
+        onOpenAddExpense={() => {
+          setIsCommandPaletteOpen(false);
+          setEditingTransaction(null);
+          setIsAddExpenseOpen(true);
+        }}
+        onOpenCsvImport={() => {
+          setIsCommandPaletteOpen(false);
+          setIsCsvImportOpen(true);
+        }}
+      />
+
+      <ShortcutsHelpModal
+        isOpen={isShortcutsHelpOpen}
+        onClose={() => setIsShortcutsHelpOpen(false)}
+      />
+
+      {/* ── 7. Global Toast Notification System ── */}
+      <ToastContainer />
     </div>
   );
 }

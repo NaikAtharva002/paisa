@@ -37,7 +37,7 @@ const PRIMARY_NAV: NavItem[] = [
 
 export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentTab, onSelectTab }) => {
   return (
-    <aside className="hidden lg:flex w-64 bg-[#141820] text-slate-300 flex-col justify-between p-6 h-screen sticky top-0 border-r border-[#222936] select-none z-30">
+    <aside className="hidden lg:flex w-64 bg-[#141820] text-slate-300 flex-col justify-between p-6 h-screen sticky top-0 border-r border-[#222936] select-none z-30 overflow-y-auto">
       {/* Brand Header */}
       <div>
         <div className="flex items-center gap-3 px-3 py-2 mb-8">

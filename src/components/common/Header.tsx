@@ -6,6 +6,7 @@ import { getNotifications } from '../../lib/notifications';
 interface HeaderProps {
   onOpenAddExpense: () => void;
   onOpenNotifications: () => void;
+  onOpenSearch?: () => void;
   currentTone: RealityTone;
   onChangeTone: (tone: RealityTone) => void;
   displayName: string;
@@ -14,6 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenAddExpense,
   onOpenNotifications,
+  onOpenSearch,
   currentTone,
   onChangeTone,
   displayName,
@@ -45,16 +47,20 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Desktop Search Bar (Reference 2) */}
-          <div className="hidden lg:flex items-center relative w-full">
-            <Search className="w-4 h-4 text-[#7F899F] absolute left-3.5" />
+          <div
+            onClick={onOpenSearch}
+            className="hidden lg:flex items-center relative w-full cursor-pointer group"
+          >
+            <Search className="w-4 h-4 text-[#7F899F] group-hover:text-[#D4952B] absolute left-3.5 transition-colors" />
             <input
               type="text"
               readOnly
+              onClick={onOpenSearch}
               placeholder="Search anything... (transactions, budgets, merchants)"
-              className="w-full pl-9 pr-12 py-2 rounded-full bg-white border border-[#EDE8E0] text-xs text-[#181D26] placeholder-[#A4ADC0] focus:outline-none focus:border-[#D4952B] shadow-sm cursor-pointer"
+              className="w-full pl-9 pr-12 py-2 rounded-full bg-white border border-[#EDE8E0] text-xs text-[#181D26] placeholder-[#A4ADC0] group-hover:border-[#D4952B] shadow-sm cursor-pointer transition-colors"
             />
             <span className="absolute right-3 text-[10px] font-mono-num font-semibold text-[#7F899F] bg-[#F5F2EB] px-1.5 py-0.5 rounded border border-[#EDE8E0]">
-              ⌘K
+              ⌘K /
             </span>
           </div>
         </div>
