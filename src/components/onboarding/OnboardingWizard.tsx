@@ -59,7 +59,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-100">
+    <div className="paisa-entry min-h-screen flex flex-col justify-center items-center p-4 sm:p-6">
       
       {/* Brand Header */}
       <div className="mb-6 text-center">

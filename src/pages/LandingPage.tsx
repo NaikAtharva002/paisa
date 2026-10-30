@@ -78,7 +78,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   const pctUsed = Number(((totalSpent / dailyBudget) * 100).toFixed(1));
 
   return (
-    <div className="min-h-screen bg-[#06091A] text-slate-100 flex flex-col justify-between selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="paisa-entry min-h-screen flex flex-col justify-between">
       {/* Top Navbar */}
       <nav className="w-full border-b border-white/[0.06] px-6 py-4 bg-[#06091A]/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
