@@ -4,6 +4,7 @@ import { RecurringPayment, Frequency } from '../types';
 import { formatINR, advanceNextDueDate, roundPaise } from '../lib/calculations';
 import { CalendarDays, Plus, Trash2, Edit2, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { Modal } from '../components/common/Modal';
+import { BillPayModal } from '../components/common/BillPayModal';
 
 export const RecurringPage: React.FC = () => {
   const recurring = store.getRecurringPayments();
@@ -13,6 +14,7 @@ export const RecurringPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'all'>('upcoming');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringPayment | null>(null);
+  const [payingBill, setPayingBill] = useState<RecurringPayment | null>(null);
 
   // Form states
   const [name, setName] = useState('');
@@ -299,7 +301,9 @@ export const RecurringPage: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => handleRecordNow(item)}
+                    type="button"
+                    onClick={() => setPayingBill(item)}
+                    aria-label={`Pay ${item.name}`}
                     className="px-4 py-1.5 rounded-full bg-[#181D26] hover:bg-[#2A3140] text-white text-xs font-bold transition-all shadow-sm"
                   >
                     Pay
@@ -434,6 +438,13 @@ export const RecurringPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* UPI Deep Link & Payment Settlement Modal */}
+      <BillPayModal
+        bill={payingBill}
+        isOpen={!!payingBill}
+        onClose={() => setPayingBill(null)}
+      />
     </div>
   );
 };

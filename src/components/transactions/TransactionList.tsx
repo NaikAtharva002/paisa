@@ -3,6 +3,7 @@ import { Transaction } from '../../types';
 import { formatINR, isSpendingExpense } from '../../lib/calculations';
 import { store } from '../../lib/storage';
 import { exportTransactionsToCsv } from '../../lib/csvParser';
+import { showToast } from '../common/Toast';
 import {
   Search,
   Download,
@@ -75,10 +76,21 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     groups[label].push(tx);
   });
 
-  const handleDelete = (id: string, merchant: string) => {
-    if (confirm(`Delete transaction "${merchant}"?`)) {
-      store.deleteTransaction(id);
-    }
+  const handleDelete = (tx: Transaction) => {
+    store.deleteTransaction(tx.id);
+    showToast({
+      type: 'info',
+      title: `Deleted "${tx.merchant}" (${formatINR(tx.amount)})`,
+      message: 'Tap Undo within 5 seconds to restore.',
+      undoAction: () => {
+        store.addTransaction(tx);
+        showToast({
+          type: 'success',
+          title: 'Transaction restored!',
+          message: `${tx.merchant} is back in your ledger.`,
+        });
+      },
+    });
   };
 
   const handleExportCsv = () => {
@@ -323,10 +335,12 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                           <Edit2 className="w-3.5 h-3.5 text-[#5E687D]" />
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(tx.id, tx.merchant);
+                            handleDelete(tx);
                           }}
+                          aria-label={`Delete ${tx.merchant}`}
                           className="btn-icon w-7 h-7 text-[#E06D53]"
                           title="Delete"
                         >

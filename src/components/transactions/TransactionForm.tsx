@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, PaymentMethod, TransactionType } from '../../types';
 import { store } from '../../lib/storage';
 import { suggestCategory } from '../../lib/categorization';
-import { roundPaise } from '../../lib/calculations';
-import { Sparkles } from 'lucide-react';
+import { roundPaise, formatINR } from '../../lib/calculations';
+import { Sparkles, Landmark } from 'lucide-react';
+import { showToast } from '../common/Toast';
 
 interface TransactionFormProps {
   initialData?: Transaction | null;
@@ -21,12 +22,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 }) => {
   const categories = store.getCategories();
   const profile = store.getProfile();
+  const accounts = store.getAccounts();
 
   const [amount, setAmount] = useState(initialData ? String(initialData.amount) : '');
   const [merchant, setMerchant] = useState(initialData?.merchant || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [transactionType, setTransactionType] = useState<TransactionType>(initialData?.transaction_type || 'expense');
   const [categoryId, setCategoryId] = useState(initialData?.category_id || 'cat_food');
+  const [accountId, setAccountId] = useState(initialData?.account_id || accounts[0]?.id || '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialData?.payment_method || 'UPI');
   const [transactionDate, setTransactionDate] = useState(
     initialData?.transaction_date || new Date().toISOString().slice(0, 16)
@@ -89,12 +92,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         description: description.trim(),
         transaction_type: transactionType,
         category_id: categoryId,
+        account_id: accountId || undefined,
         payment_method: paymentMethod,
         transaction_date: transactionDate,
         is_unplanned: isUnplanned,
         is_recurring: isRecurring,
         is_credit_card_payment: isCreditCardPayment,
         notes: notes.trim(),
+      });
+      showToast({
+        type: 'success',
+        title: 'Transaction updated!',
+        message: `${merchant.trim()} — ${formatINR(numAmount)}`,
       });
     } else {
       store.addTransaction({
@@ -104,12 +113,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         description: description.trim(),
         transaction_type: transactionType,
         category_id: categoryId,
+        account_id: accountId || undefined,
         payment_method: paymentMethod,
         transaction_date: transactionDate,
         is_unplanned: isUnplanned,
         is_recurring: isRecurring,
         is_credit_card_payment: isCreditCardPayment,
         notes: notes.trim(),
+      });
+      showToast({
+        type: 'success',
+        title: transactionType === 'expense' ? 'Expense recorded!' : 'Income recorded!',
+        message: `${merchant.trim()} — ${formatINR(numAmount)}`,
       });
     }
 
@@ -275,6 +290,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </label>
         )}
       </div>
+
+      {/* Account Selector */}
+      {accounts.length > 0 && (
+        <div>
+          <label className="section-title text-[#7F899F] flex items-center gap-1.5">
+            <Landmark className="w-3.5 h-3.5 text-[#3B82F6]" />
+            <span>Debit / Credit Account</span>
+          </label>
+          <select
+            value={accountId}
+            onChange={e => setAccountId(e.target.value)}
+            className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
+          >
+            {accounts.map(acc => (
+              <option key={acc.id} value={acc.id}>
+                {acc.account_name} ({acc.account_type}) — Balance: {formatINR(acc.balance)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Payment Method & Date/Time Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
