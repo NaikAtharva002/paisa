@@ -1,0 +1,31 @@
+name: PAISA Quality Assurance & Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  qa_verification:
+    name: Build, TypeCheck & Automated Test Suites
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment (v20 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Project Dependencies
+        run: npm ci
+
+      - name: TypeScript Type Checking & Production Build
+        run: npm run build
+
+      - name: Execute Full Vitest Test Suite (Unit, Integration, E2E, QA)
+        run: npm test

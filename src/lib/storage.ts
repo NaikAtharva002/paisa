@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { DEFAULT_CATEGORIES, MerchantRule } from './categorization';
 import { sanitizeString } from './security';
+import { roundPaise } from './calculations';
 import { auditLogger } from './auditLogger';
 import { authService } from './authService';
 
@@ -565,8 +566,10 @@ export const store = {
 
   addTransaction(tx: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>): Transaction {
     const activeUserId = tx.user_id || this.getActiveUserId();
+    const sanitizedAmount = roundPaise(Math.abs(Number(tx.amount) || 0));
     const newTx: Transaction = {
       ...tx,
+      amount: sanitizedAmount,
       user_id: activeUserId,
       merchant: sanitizeString(tx.merchant),
       description: sanitizeString(tx.description),
@@ -600,6 +603,7 @@ export const store = {
     const updated: Transaction = {
       ...all[idx],
       ...updates,
+      amount: updates.amount !== undefined ? roundPaise(Math.abs(Number(updates.amount) || 0)) : all[idx].amount,
       merchant: updates.merchant !== undefined ? sanitizeString(updates.merchant) : all[idx].merchant,
       description: updates.description !== undefined ? sanitizeString(updates.description) : all[idx].description,
       notes: updates.notes !== undefined ? sanitizeString(updates.notes) : all[idx].notes,
@@ -636,6 +640,7 @@ export const store = {
     const activeUserId = this.getActiveUserId();
     const toAdd: Transaction[] = newTxs.map(tx => ({
       ...tx,
+      amount: roundPaise(Math.abs(Number(tx.amount) || 0)),
       user_id: tx.user_id || activeUserId,
       merchant: sanitizeString(tx.merchant),
       description: sanitizeString(tx.description),
@@ -758,15 +763,20 @@ export const store = {
     return this.getAllRawRecurringPayments().filter(r => r.user_id === activeUserId);
   },
 
-  addRecurringPayment(item: RecurringPayment) {
-    const activeUserId = item.user_id || this.getActiveUserId();
-    const newItem = {
+  addRecurringPayment(
+    item: RecurringPayment | (Omit<RecurringPayment, 'id' | 'user_id'> & { id?: string; user_id?: string }),
+    requestingUserId?: string
+  ): RecurringPayment {
+    const activeUserId = requestingUserId || item.user_id || this.getActiveUserId();
+    const newItem: RecurringPayment = {
       ...item,
+      id: item.id || `rec_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       user_id: activeUserId,
       name: sanitizeString(item.name),
     };
     const list = [...this.getAllRawRecurringPayments(), newItem];
     setStored(STORAGE_KEYS.RECURRING, list);
+    return newItem;
   },
 
   updateRecurringPayment(id: string, updates: Partial<RecurringPayment>, requestingUserId?: string) {
@@ -793,11 +803,11 @@ export const store = {
     setStored(STORAGE_KEYS.RECURRING, all);
   },
 
-  deleteRecurringPayment(id: string, requestingUserId?: string) {
+  deleteRecurringPayment(id: string, requestingUserId?: string): boolean {
     const activeUserId = requestingUserId || this.getActiveUserId();
     const all = this.getAllRawRecurringPayments();
     const target = all.find(r => r.id === id);
-    if (!target) return;
+    if (!target) return false;
 
     if (target.user_id !== activeUserId) {
       auditLogger.log({
@@ -806,11 +816,12 @@ export const store = {
         details: `Blocked attempt to delete recurring bill ${id} owned by ${target.user_id}`,
         success: false,
       });
-      return;
+      return false;
     }
 
     const list = all.filter(r => r.id !== id);
     setStored(STORAGE_KEYS.RECURRING, list);
+    return true;
   },
 
   // Savings Goals (Multi-tenant isolated)
@@ -823,15 +834,20 @@ export const store = {
     return this.getAllRawSavingsGoals().filter(g => g.user_id === activeUserId);
   },
 
-  addSavingsGoal(goal: SavingsGoal) {
-    const activeUserId = goal.user_id || this.getActiveUserId();
-    const newGoal = {
+  addSavingsGoal(
+    goal: SavingsGoal | (Omit<SavingsGoal, 'id' | 'user_id'> & { id?: string; user_id?: string }),
+    requestingUserId?: string
+  ): SavingsGoal {
+    const activeUserId = requestingUserId || goal.user_id || this.getActiveUserId();
+    const newGoal: SavingsGoal = {
       ...goal,
+      id: goal.id || `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       user_id: activeUserId,
       name: sanitizeString(goal.name),
     };
     const list = [...this.getAllRawSavingsGoals(), newGoal];
     setStored(STORAGE_KEYS.SAVINGS, list);
+    return newGoal;
   },
 
   updateSavingsGoal(id: string, updates: Partial<SavingsGoal>, requestingUserId?: string) {
@@ -858,11 +874,11 @@ export const store = {
     setStored(STORAGE_KEYS.SAVINGS, all);
   },
 
-  deleteSavingsGoal(id: string, requestingUserId?: string) {
+  deleteSavingsGoal(id: string, requestingUserId?: string): boolean {
     const activeUserId = requestingUserId || this.getActiveUserId();
     const all = this.getAllRawSavingsGoals();
     const target = all.find(g => g.id === id);
-    if (!target) return;
+    if (!target) return false;
 
     if (target.user_id !== activeUserId) {
       auditLogger.log({
@@ -871,11 +887,12 @@ export const store = {
         details: `Blocked attempt to delete savings goal ${id} owned by ${target.user_id}`,
         success: false,
       });
-      return;
+      return false;
     }
 
     const list = all.filter(g => g.id !== id);
     setStored(STORAGE_KEYS.SAVINGS, list);
+    return true;
   },
 
   // Notification Preferences
@@ -1088,17 +1105,18 @@ export const store = {
   },
 
   // Export full user data package (DPDP Act / GDPR)
-  exportFullDataBackup(): string {
+  exportFullDataBackup(userId?: string): string {
+    const activeUserId = userId || this.getActiveUserId();
     const dump = {
       user: this.getUser(),
       financialProfile: this.getProfile(),
-      accounts: this.getAccounts(),
+      accounts: this.getAccounts(activeUserId),
       categories: this.getCategories(),
-      transactions: this.getTransactions(),
-      recurring: this.getRecurringPayments(),
-      savingsGoals: this.getSavingsGoals(),
+      transactions: this.getTransactions(activeUserId),
+      recurring: this.getRecurringPayments(activeUserId),
+      savingsGoals: this.getSavingsGoals(activeUserId),
       notificationPreferences: this.getNotificationPreferences(),
-      bankConsents: this.getBankConsents(),
+      bankConsents: this.getBankConsents(activeUserId),
       exportedAt: new Date().toISOString(),
       app: 'Paisa — Your Daily Money Reality Check',
     };

@@ -415,29 +415,49 @@ export function calculateMonthlyTrends(
 
 /**
  * Advances recurring payment due date to the next cycle based on frequency.
+ * Accurately clamps month-end dates (e.g. Jan 31 -> Feb 28/29, Aug 31 -> Sep 30)
+ * to avoid JavaScript Date month overflow skips.
  */
 export function advanceNextDueDate(currentDueDateStr: string, frequency: Frequency): string {
-  const d = new Date(currentDueDateStr);
-  if (isNaN(d.getTime())) {
+  const parts = currentDueDateStr.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) {
     return new Date().toISOString().slice(0, 10);
   }
+  let [year, month, day] = parts; // month is 1-12
 
   switch (frequency) {
-    case 'weekly':
-      d.setDate(d.getDate() + 7);
-      break;
-    case 'monthly':
-      d.setMonth(d.getMonth() + 1);
-      break;
-    case 'quarterly':
-      d.setMonth(d.getMonth() + 3);
-      break;
-    case 'yearly':
-      d.setFullYear(d.getFullYear() + 1);
-      break;
+    case 'weekly': {
+      const d = new Date(Date.UTC(year, month - 1, day));
+      d.setUTCDate(d.getUTCDate() + 7);
+      return d.toISOString().slice(0, 10);
+    }
+    case 'monthly': {
+      month += 1;
+      if (month > 12) {
+        year += 1;
+        month = 1;
+      }
+      const maxDays = getDaysInMonth(year, month);
+      const clampedDay = Math.min(day, maxDays);
+      return `${year}-${String(month).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+    }
+    case 'quarterly': {
+      month += 3;
+      while (month > 12) {
+        year += 1;
+        month -= 12;
+      }
+      const maxDays = getDaysInMonth(year, month);
+      const clampedDay = Math.min(day, maxDays);
+      return `${year}-${String(month).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+    }
+    case 'yearly': {
+      year += 1;
+      const maxDays = getDaysInMonth(year, month);
+      const clampedDay = Math.min(day, maxDays);
+      return `${year}-${String(month).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+    }
   }
-
-  return d.toISOString().slice(0, 10);
 }
 
 // --------------------------------------------------------------------

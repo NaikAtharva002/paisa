@@ -37,7 +37,7 @@ export const BudgetManager: React.FC = () => {
 
   const handleSaveBudget = (catId: string) => {
     const val = parseFloat(budgetInput);
-    if (!isNaN(val) && val > 0) {
+    if (!isNaN(val) && val >= 0) {
       store.updateCategoryBudget(catId, val);
       setCategoryBudgets(store.getCategoryBudgets());
     }
