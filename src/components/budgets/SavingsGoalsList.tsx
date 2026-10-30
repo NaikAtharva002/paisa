@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { SavingsGoal } from '../../types';
 import { store } from '../../lib/storage';
 import { formatINR } from '../../lib/calculations';
-import { PiggyBank, Plus, CheckCircle2, ShieldCheck, Flame, Laptop, Palmtree, Sparkles } from 'lucide-react';
+import { PiggyBank, Plus, CheckCircle2, ShieldCheck, Laptop, Sparkles, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { Modal } from '../common/Modal';
 
 export const SavingsGoalsList: React.FC = () => {
   const goals = store.getSavingsGoals();
@@ -60,168 +61,178 @@ export const SavingsGoalsList: React.FC = () => {
   };
 
   return (
-    <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 shadow-xl backdrop-blur-sm space-y-4">
+    <div className="p-5 sm:p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
             <PiggyBank className="w-4 h-4 text-emerald-400" />
-            <span>Savings Goals & Challenges</span>
+            <span>Savings Goals & Targets</span>
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Turn your daily budget savings into real financial freedom
+            Convert daily budget surpluses into real financial cushions
           </p>
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+          className="btn-primary text-xs px-3.5 py-1.5"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3.5 h-3.5 stroke-[3]" />
           <span>New Goal</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {goals.map(goal => {
-          const progress = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
-          const isComplete = goal.current_amount >= goal.target_amount;
+          const pct = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
+          const isCompleted = goal.current_amount >= goal.target_amount;
 
           return (
             <div
               key={goal.id}
-              className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between space-y-3"
+              className="p-4 rounded-xl bg-[#06091A] border border-white/[0.06] hover:border-white/[0.14] transition-all space-y-3 flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-xs sm:text-sm text-slate-100 flex items-center gap-2">
-                    <span>{goal.name}</span>
-                    {isComplete && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Achieved!
-                      </span>
-                    )}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-white">{goal.name}</div>
+                      <div className="text-[10px] text-slate-500">Target: {goal.target_date}</div>
+                    </div>
                   </div>
-                  <span className="text-xs font-extrabold text-emerald-400 font-mono-num">
-                    {progress}%
-                  </span>
+                  {isCompleted && (
+                    <span className="tag tag-green text-[10px]">
+                      <CheckCircle2 className="w-3 h-3" /> Done
+                    </span>
+                  )}
                 </div>
 
-                <div className="text-[11px] text-slate-400 mt-1">
-                  Target date: {goal.target_date}
-                </div>
-              </div>
-
-              {/* Progress track */}
-              <div className="space-y-1.5">
-                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${
-                      isComplete ? 'bg-gradient-to-r from-emerald-400 to-teal-400' : 'bg-emerald-500'
-                    }`}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-[11px] font-mono-num text-slate-300">
-                  <span>Current: <strong>{formatINR(goal.current_amount, false)}</strong></span>
-                  <span className="text-slate-400">Target: {formatINR(goal.target_amount, false)}</span>
-                </div>
-              </div>
-
-              {/* Quick deposit button */}
-              <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between">
-                {selectedGoal?.id === goal.id ? (
-                  <div className="flex items-center gap-2 w-full">
-                    <input
-                      type="number"
-                      value={depositAmount}
-                      onChange={e => setDepositAmount(e.target.value)}
-                      placeholder="Add ₹"
-                      className="w-full px-2.5 py-1 text-xs rounded-lg bg-slate-900 border border-slate-700 text-white font-mono-num"
-                      autoFocus
+                <div className="space-y-1.5 mt-2">
+                  <div className="flex justify-between text-xs font-mono-num">
+                    <span className="text-emerald-400 font-bold">{formatINR(goal.current_amount)}</span>
+                    <span className="text-slate-500">of {formatINR(goal.target_amount)}</span>
+                  </div>
+                  <div className="w-full h-2 bg-[#0D1426] rounded-full overflow-hidden border border-white/[0.04]">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
                     />
-                    <button
-                      onClick={() => handleDeposit(goal)}
-                      className="px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setSelectedGoal(null)}
-                      className="text-xs text-slate-400"
-                    >
-                      ✕
-                    </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setSelectedGoal(goal)}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Contribute surplus to goal</span>
-                  </button>
-                )}
+                  <div className="text-right text-[10px] text-slate-500 font-mono-num">{pct}% reached</div>
+                </div>
               </div>
+
+              <button
+                onClick={() => setSelectedGoal(goal)}
+                className="w-full py-1.5 rounded-lg bg-[#111827] hover:bg-[#1A2340] border border-white/[0.08] text-xs font-semibold text-slate-200 transition-colors"
+              >
+                + Add Deposit
+              </button>
             </div>
           );
         })}
       </div>
 
-      {/* Add Goal Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <h4 className="text-sm font-bold text-slate-100 mb-3">Create New Savings Goal</h4>
-            <form onSubmit={handleCreateGoal} className="space-y-3">
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Goal Name</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="e.g. Goa Trip, iPhone, Emergency Fund"
-                  required
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Target Amount (INR)</label>
-                <input
-                  type="number"
-                  value={newTarget}
-                  onChange={e => setNewTarget(e.target.value)}
-                  placeholder="e.g. 50000"
-                  required
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white font-mono-num"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Target Date</label>
-                <input
-                  type="date"
-                  value={newDate}
-                  onChange={e => setNewDate(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white"
-                />
-              </div>
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs"
-                >
-                  Save Goal
-                </button>
-              </div>
-            </form>
+      {/* MODAL: Deposit into Goal */}
+      <Modal
+        isOpen={!!selectedGoal}
+        onClose={() => setSelectedGoal(null)}
+        title={selectedGoal ? `Deposit to ${selectedGoal.name}` : ''}
+      >
+        {selectedGoal && (
+          <div className="space-y-4">
+            <div>
+              <label className="section-title text-slate-400">Deposit Amount (₹)</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={depositAmount}
+                onChange={e => setDepositAmount(e.target.value)}
+                placeholder="e.g. 2000"
+                className="input-field mt-1 text-lg font-bold font-mono-num"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setSelectedGoal(null)}
+                className="btn-secondary text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeposit(selectedGoal)}
+                className="btn-primary text-xs"
+              >
+                Confirm Deposit
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
+
+      {/* MODAL: Add New Goal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Create New Savings Goal"
+      >
+        <form onSubmit={handleCreateGoal} className="space-y-4">
+          <div>
+            <label className="section-title text-slate-400">Goal Name</label>
+            <input
+              type="text"
+              required
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="e.g. Emergency Fund, New Laptop, Goa Trip"
+              className="input-field mt-1 text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="section-title text-slate-400">Target Amount (₹)</label>
+            <input
+              type="number"
+              min="100"
+              required
+              value={newTarget}
+              onChange={e => setNewTarget(e.target.value)}
+              placeholder="e.g. 50000"
+              className="input-field mt-1 text-xs font-mono-num"
+            />
+          </div>
+
+          <div>
+            <label className="section-title text-slate-400">Target Completion Date</label>
+            <input
+              type="date"
+              required
+              value={newDate}
+              onChange={e => setNewDate(e.target.value)}
+              className="input-field mt-1 text-xs"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-white/[0.08]">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="btn-secondary text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary text-xs"
+            >
+              Create Goal
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
