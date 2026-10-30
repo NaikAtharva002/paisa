@@ -28,7 +28,8 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
     reader.onload = event => {
       const content = event.target?.result as string;
       setCsvText(content);
-      const res = parseTransactionsCsv(content, existingTxs, profile.user_id);
+      const userRules = store.getUserCategoryRules();
+      const res = parseTransactionsCsv(content, existingTxs, profile.user_id, userRules);
       setParsedResult(res);
     };
     reader.readAsText(file);
@@ -36,7 +37,8 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
 
   const handleParseManual = () => {
     if (!csvText.trim()) return;
-    const res = parseTransactionsCsv(csvText, existingTxs, profile.user_id);
+    const userRules = store.getUserCategoryRules();
+    const res = parseTransactionsCsv(csvText, existingTxs, profile.user_id, userRules);
     setParsedResult(res);
   };
 

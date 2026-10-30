@@ -34,19 +34,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [isUnplanned, setIsUnplanned] = useState(initialData?.is_unplanned || false);
   const [isRecurring, setIsRecurring] = useState(initialData?.is_recurring || false);
   const [notes, setNotes] = useState(initialData?.notes || '');
-  const [autoCatSuggestion, setAutoCatSuggestion] = useState<string | null>(null);
+  const [autoCatSuggestion, setAutoCatSuggestion] = useState<{ rule: string; label: string; isCustom: boolean } | null>(null);
+  const [rememberMerchantMapping, setRememberMerchantMapping] = useState(false);
   const [isCreditCardPayment, setIsCreditCardPayment] = useState(initialData?.is_credit_card_payment || false);
 
-  // Auto-suggest category whenever merchant changes
+  // Auto-suggest category whenever merchant changes using learned rules + dictionary
   useEffect(() => {
     if (!initialData && merchant.length >= 2) {
-      const result = suggestCategory(merchant, description);
-      if (result.categoryId && result.confidence >= 0.7) {
+      const userRules = store.getUserCategoryRules();
+      const result = suggestCategory(merchant, description, userRules);
+      if (result.categoryId && result.confidence >= 0.5) {
         setCategoryId(result.categoryId);
-        setAutoCatSuggestion(result.matchedRule || null);
+        setAutoCatSuggestion({
+          rule: result.matchedRule || result.categoryId,
+          label: result.confidenceLabel,
+          isCustom: !!result.isCustomLearned,
+        });
         if (result.isCreditCardPayment) {
           setIsCreditCardPayment(true);
         }
+      } else {
+        setAutoCatSuggestion(null);
       }
     }
   }, [merchant, description, initialData]);
@@ -102,6 +110,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         is_recurring: isRecurring,
         is_credit_card_payment: isCreditCardPayment,
         notes: notes.trim(),
+      });
+    }
+
+    // Persist learned merchant categorization rule if selected
+    if (rememberMerchantMapping && merchant.trim().length >= 2) {
+      store.saveUserCategoryRule({
+        keywords: [merchant.trim().toLowerCase()],
+        categoryId: categoryId,
+        isCreditCardPayment: isCreditCardPayment,
       });
     }
 
@@ -216,20 +233,28 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         </div>
       </div>
 
-      {/* Category Selection with AI Auto-detect Badge */}
-      <div>
+      {/* Category Selection with AI Auto-detect Badge & Confidence */}
+      <div className="space-y-1.5">
         <div className="flex items-center justify-between mb-1">
           <label className="section-title text-[#7F899F]">Expense Category</label>
           {autoCatSuggestion && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2E8B57]">
-              <Sparkles className="w-3 h-3" /> Auto-detected: {autoCatSuggestion}
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                autoCatSuggestion.isCustom
+                  ? 'bg-[#EFF6FF] text-[#2563EB]'
+                  : 'bg-[#F0F7F3] text-[#2E8B57]'
+              }`}
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>{autoCatSuggestion.isCustom ? 'Learned:' : 'Suggested:'} {autoCatSuggestion.rule}</span>
+              <span className="opacity-75">({autoCatSuggestion.label})</span>
             </span>
           )}
         </div>
         <select
           value={categoryId}
           onChange={e => setCategoryId(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
+          className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-hidden focus:border-[#181D26] focus:bg-white transition-colors"
         >
           {categories.map(cat => (
             <option key={cat.id} value={cat.id}>
@@ -237,6 +262,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </option>
           ))}
         </select>
+
+        {merchant.trim().length >= 2 && (
+          <label className="flex items-center gap-2 text-xs text-[#5E687D] cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              checked={rememberMerchantMapping}
+              onChange={e => setRememberMerchantMapping(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-[#2E8B57] focus:ring-[#2E8B57] border-[#EDE8E0]"
+            />
+            <span>Always remember <strong>{merchant.trim()}</strong> in this category</span>
+          </label>
+        )}
       </div>
 
       {/* Payment Method & Date/Time Grid */}

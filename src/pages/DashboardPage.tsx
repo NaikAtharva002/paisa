@@ -4,7 +4,9 @@ import {
   getEffectiveDailyBudget,
   formatINR,
   isSpendingExpense,
+  compareMonthlySpending,
 } from '../lib/calculations';
+import { calculateMonthEndForecast } from '../lib/forecasting';
 import { store } from '../lib/storage';
 import { Transaction, RealityTone } from '../types';
 import { StatCard } from '../components/common/StatCard';
@@ -77,6 +79,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const currentSavings = Math.max(0, mtdIncome - mtdSpendingTotal);
 
+  // Month-over-Month & Forecasting Intelligence
+  const categoryBudgets = store.getCategoryBudgets();
+  const mom = compareMonthlySpending(transactions, currentMonthPrefix);
+  const forecast = calculateMonthEndForecast({
+    transactions,
+    recurringPayments: recurring,
+    profile,
+    categoryBudgets,
+    currentDate: now,
+  });
+
   // Daily budget calculations
   const dailyBudget = getEffectiveDailyBudget(profile, currentYear, currentMonth);
   const dailyReport = calculateDailyReport(
@@ -109,7 +122,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     .sort((a, b) => b.amount - a.amount);
 
   // Active budgets summary for the lower row card
-  const categoryBudgets = store.getCategoryBudgets();
   const budgetSummary = [
     {
       id: 'cat_food',
@@ -165,7 +177,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <StatCard
           title="Monthly Income"
           value={formatINR(mtdIncome)}
-          badge="+8% from last month"
+          badge="Verified Salary"
           badgeVariant="sage"
           trendType="bars"
           trendColor="#2E8B57"
@@ -175,17 +187,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <StatCard
           title="Monthly Expenses"
           value={formatINR(mtdSpendingTotal)}
-          badge="+6% from last month"
-          badgeVariant="coral"
+          badge={
+            mom.hasPreviousData
+              ? `${mom.percentageChange > 0 ? `+${mom.percentageChange}%` : `${mom.percentageChange}%`} vs last mo`
+              : `${mtdExpenses.length} purchases`
+          }
+          badgeVariant={mom.hasPreviousData && mom.percentageChange > 0 ? 'coral' : 'sage'}
           trendType="bars"
-          trendColor="#E06D53"
+          trendColor={mom.hasPreviousData && mom.percentageChange > 0 ? '#E06D53' : '#2E8B57'}
         />
 
         {/* Savings */}
         <StatCard
           title="Savings"
           value={formatINR(currentSavings)}
-          badge="+22% this month"
+          badge={
+            forecast.status === 'sufficient_data'
+              ? `Proj. ${formatINR(forecast.projectedSavings)}`
+              : `${Math.round((currentSavings / (mtdIncome || 1)) * 100)}% rate`
+          }
           badgeVariant="sage"
           trendType="bars"
           trendColor="#2E8B57"

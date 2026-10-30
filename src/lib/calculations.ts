@@ -439,3 +439,145 @@ export function advanceNextDueDate(currentDueDateStr: string, frequency: Frequen
 
   return d.toISOString().slice(0, 10);
 }
+
+// --------------------------------------------------------------------
+// Level 04: Analytics - Essential vs Discretionary & Period Comparison
+// --------------------------------------------------------------------
+
+export const ESSENTIAL_CATEGORY_IDS = new Set([
+  'cat_groceries',
+  'cat_bills',
+  'cat_rent',
+  'cat_healthcare',
+  'cat_education',
+]);
+
+export interface EssentialDiscretionaryBreakdown {
+  essentialTotal: number;
+  discretionaryTotal: number;
+  totalSpending: number;
+  essentialPercentage: number;
+  discretionaryPercentage: number;
+}
+
+export function calculateEssentialDiscretionarySplit(
+  transactions: Transaction[]
+): EssentialDiscretionaryBreakdown {
+  let essentialPaise = 0;
+  let discretionaryPaise = 0;
+
+  for (const tx of transactions) {
+    if (isSpendingExpense(tx)) {
+      const amtPaise = toPaise(tx.amount);
+      if (ESSENTIAL_CATEGORY_IDS.has(tx.category_id)) {
+        essentialPaise += amtPaise;
+      } else {
+        discretionaryPaise += amtPaise;
+      }
+    } else if (tx.transaction_type === 'refund') {
+      const amtPaise = toPaise(tx.amount);
+      if (ESSENTIAL_CATEGORY_IDS.has(tx.category_id)) {
+        essentialPaise = Math.max(0, essentialPaise - amtPaise);
+      } else {
+        discretionaryPaise = Math.max(0, discretionaryPaise - amtPaise);
+      }
+    }
+  }
+
+  const totalPaise = essentialPaise + discretionaryPaise;
+  const essentialTotal = fromPaise(essentialPaise);
+  const discretionaryTotal = fromPaise(discretionaryPaise);
+
+  return {
+    essentialTotal,
+    discretionaryTotal,
+    totalSpending: fromPaise(totalPaise),
+    essentialPercentage: totalPaise > 0 ? Math.round((essentialPaise / totalPaise) * 100) : 0,
+    discretionaryPercentage: totalPaise > 0 ? Math.round((discretionaryPaise / totalPaise) * 100) : 0,
+  };
+}
+
+export interface PeriodComparison {
+  currentPeriodKey: string;
+  previousPeriodKey: string;
+  currentSpending: number;
+  previousSpending: number;
+  deltaAmount: number; // current - previous
+  percentageChange: number; // +X% or -X%
+  hasPreviousData: boolean;
+  categoryDeltas: {
+    categoryId: string;
+    currentAmount: number;
+    previousAmount: number;
+    deltaAmount: number;
+    percentageChange: number;
+  }[];
+}
+
+export function compareMonthlySpending(
+  transactions: Transaction[],
+  targetMonthKey: string // "YYYY-MM"
+): PeriodComparison {
+  const [yearStr, monthStr] = targetMonthKey.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+
+  // Compute previous month
+  const prevDate = new Date(year, month - 2, 1);
+  const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+  const currentTxs = transactions.filter(t => t.transaction_date.startsWith(targetMonthKey));
+  const prevTxs = transactions.filter(t => t.transaction_date.startsWith(prevMonthKey));
+
+  const currentSpending = calculateTotalSpending(currentTxs);
+  const previousSpending = calculateTotalSpending(prevTxs);
+  const deltaAmount = subtractMoney(currentSpending, previousSpending);
+
+  const hasPreviousData = previousSpending > 0;
+  const percentageChange = hasPreviousData 
+    ? Number((((currentSpending - previousSpending) / previousSpending) * 100).toFixed(1))
+    : 0;
+
+  // Category-wise comparisons
+  const currentCatMap = new Map<string, number>();
+  const prevCatMap = new Map<string, number>();
+
+  currentTxs.forEach(t => {
+    if (isSpendingExpense(t)) {
+      currentCatMap.set(t.category_id, (currentCatMap.get(t.category_id) || 0) + toPaise(t.amount));
+    }
+  });
+
+  prevTxs.forEach(t => {
+    if (isSpendingExpense(t)) {
+      prevCatMap.set(t.category_id, (prevCatMap.get(t.category_id) || 0) + toPaise(t.amount));
+    }
+  });
+
+  const allCatIds = new Set([...Array.from(currentCatMap.keys()), ...Array.from(prevCatMap.keys())]);
+  const categoryDeltas = Array.from(allCatIds).map(catId => {
+    const curAmt = fromPaise(currentCatMap.get(catId) || 0);
+    const prevAmt = fromPaise(prevCatMap.get(catId) || 0);
+    const catDelta = subtractMoney(curAmt, prevAmt);
+    const catPct = prevAmt > 0 ? Number((((curAmt - prevAmt) / prevAmt) * 100).toFixed(1)) : 0;
+
+    return {
+      categoryId: catId,
+      currentAmount: curAmt,
+      previousAmount: prevAmt,
+      deltaAmount: catDelta,
+      percentageChange: catPct,
+    };
+  }).sort((a, b) => Math.abs(b.deltaAmount) - Math.abs(a.deltaAmount));
+
+  return {
+    currentPeriodKey: targetMonthKey,
+    previousPeriodKey: prevMonthKey,
+    currentSpending,
+    previousSpending,
+    deltaAmount,
+    percentageChange,
+    hasPreviousData,
+    categoryDeltas,
+  };
+}

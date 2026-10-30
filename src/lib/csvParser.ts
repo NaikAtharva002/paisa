@@ -1,5 +1,5 @@
 import { Transaction, PaymentMethod, TransactionType } from '../types';
-import { suggestCategory } from './categorization';
+import { suggestCategory, MerchantRule } from './categorization';
 import { sanitizeCsvCell } from './security';
 
 export interface ParsedCsvRow {
@@ -31,7 +31,8 @@ function normalizeString(str: string): string {
 export function parseTransactionsCsv(
   csvContent: string,
   existingTransactions: Transaction[],
-  userId: string
+  userId: string,
+  customRules: MerchantRule[] = []
 ): { validRows: ParsedCsvRow[]; duplicatesCount: number; errors: string[] } {
   const lines = csvContent
     .split(/\r?\n/)
@@ -100,8 +101,8 @@ export function parseTransactionsCsv(
     else if (rawMethod.includes('wallet')) method = 'Wallet';
     else if (rawMethod.includes('upi') || description.toLowerCase().includes('upi/')) method = 'UPI';
 
-    // Categorization
-    const catResult = suggestCategory(merchant, description);
+    // Categorization using learned custom rules + dictionary
+    const catResult = suggestCategory(merchant, description, customRules);
 
     // Duplicate detection check
     const isDuplicate = checkDuplicate(

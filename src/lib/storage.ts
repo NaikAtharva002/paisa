@@ -10,7 +10,7 @@ import {
   NotificationPreference,
   BankConsent,
 } from '../types';
-import { DEFAULT_CATEGORIES } from './categorization';
+import { DEFAULT_CATEGORIES, MerchantRule } from './categorization';
 import { sanitizeString } from './security';
 import { auditLogger } from './auditLogger';
 import { authService } from './authService';
@@ -27,6 +27,9 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'paisa_notification_prefs',
   CONSENTS: 'paisa_bank_consents',
   ONBOARDED: 'paisa_is_onboarded',
+  MERCHANT_RULES: 'paisa_merchant_rules',
+  DISMISSED_INSIGHTS: 'paisa_dismissed_insights',
+  AI_INSIGHTS_ENABLED: 'paisa_ai_insights_enabled',
 };
 
 // Listeners for reactive updates
@@ -894,6 +897,95 @@ export const store = {
   revokeBankConsent(id: string) {
     const list = this.getBankConsents().map(c => c.id === id ? { ...c, status: 'REVOKED' as const } : c);
     setStored(STORAGE_KEYS.CONSENTS, list);
+  },
+
+  // --------------------------------------------------------------------
+  // Level 04: Intelligence & Custom Categorization Learning Rules
+  // --------------------------------------------------------------------
+  getUserCategoryRules(userId?: string): MerchantRule[] {
+    const activeUserId = userId || this.getActiveUserId();
+    const rules = getStored<MerchantRule[]>(STORAGE_KEYS.MERCHANT_RULES, []);
+    return rules.filter(r => !r.user_id || r.user_id === activeUserId);
+  },
+
+  saveUserCategoryRule(rule: Omit<MerchantRule, 'id'>, requestingUserId?: string): MerchantRule {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const currentRules = getStored<MerchantRule[]>(STORAGE_KEYS.MERCHANT_RULES, []);
+    
+    // Check if an existing rule exists for these keywords
+    const sanitizedKeywords = rule.keywords.map(kw => sanitizeString(kw.toLowerCase().trim())).filter(Boolean);
+    const existingIdx = currentRules.findIndex(
+      r => (r.user_id === activeUserId || !r.user_id) && 
+           r.keywords.some(k => sanitizedKeywords.includes(k.toLowerCase()))
+    );
+
+    const newRule: MerchantRule = {
+      ...rule,
+      id: existingIdx !== -1 ? currentRules[existingIdx].id : `rule_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      user_id: activeUserId,
+      keywords: sanitizedKeywords,
+    };
+
+    if (existingIdx !== -1) {
+      currentRules[existingIdx] = newRule;
+    } else {
+      currentRules.push(newRule);
+    }
+
+    setStored(STORAGE_KEYS.MERCHANT_RULES, currentRules);
+    return newRule;
+  },
+
+  deleteUserCategoryRule(ruleId: string, requestingUserId?: string): boolean {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const currentRules = getStored<MerchantRule[]>(STORAGE_KEYS.MERCHANT_RULES, []);
+    const target = currentRules.find(r => r.id === ruleId);
+    if (!target) return false;
+
+    if (target.user_id && target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to delete merchant rule ${ruleId} owned by ${target.user_id}`,
+        success: false,
+      });
+      return false;
+    }
+
+    const filtered = currentRules.filter(r => r.id !== ruleId);
+    setStored(STORAGE_KEYS.MERCHANT_RULES, filtered);
+    return true;
+  },
+
+  // --------------------------------------------------------------------
+  // Level 04: AI Insights Controls (Dismissal & Opt-in/Opt-out)
+  // --------------------------------------------------------------------
+  getDismissedInsights(): string[] {
+    return getStored<string[]>(STORAGE_KEYS.DISMISSED_INSIGHTS, []);
+  },
+
+  dismissInsight(insightId: string): void {
+    const current = this.getDismissedInsights();
+    if (!current.includes(insightId)) {
+      setStored(STORAGE_KEYS.DISMISSED_INSIGHTS, [...current, insightId]);
+    }
+  },
+
+  clearDismissedInsights(): void {
+    setStored(STORAGE_KEYS.DISMISSED_INSIGHTS, []);
+  },
+
+  getAIInsightsEnabled(): boolean {
+    if (typeof localStorage === 'undefined') return true;
+    const raw = localStorage.getItem(STORAGE_KEYS.AI_INSIGHTS_ENABLED);
+    return raw !== null ? raw === 'true' : true;
+  },
+
+  setAIInsightsEnabled(enabled: boolean): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.AI_INSIGHTS_ENABLED, enabled ? 'true' : 'false');
+    }
+    notifyListeners();
   },
 
   // Export full user data package (DPDP Act / GDPR)

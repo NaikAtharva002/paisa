@@ -19,20 +19,40 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_other', name: 'Other', icon: 'MoreHorizontal', color: '#94A3B8', category_type: 'expense', is_default: true },
 ];
 
+export type ConfidenceTier = 'high' | 'medium' | 'low' | 'needs_review';
+
 export interface CategorizationResult {
   categoryId: string;
   isCreditCardPayment: boolean;
   isInternalTransfer: boolean;
   confidence: number;
+  confidenceTier: ConfidenceTier;
+  confidenceLabel: string;
   matchedRule?: string;
+  isCustomLearned?: boolean;
   notes?: string;
 }
 
-interface MerchantRule {
+export interface MerchantRule {
+  id?: string;
   keywords: string[];
   categoryId: string;
   isCreditCardPayment?: boolean;
   isInternalTransfer?: boolean;
+  user_id?: string;
+}
+
+export function getConfidenceTier(confidence: number): { tier: ConfidenceTier; label: string } {
+  if (confidence >= 0.85) {
+    return { tier: 'high', label: 'High Confidence' };
+  }
+  if (confidence >= 0.60) {
+    return { tier: 'medium', label: 'Medium Confidence' };
+  }
+  if (confidence >= 0.40) {
+    return { tier: 'low', label: 'Low Confidence' };
+  }
+  return { tier: 'needs_review', label: 'Needs Review' };
 }
 
 export const MERCHANT_RULES: MerchantRule[] = [
@@ -48,15 +68,15 @@ export const MERCHANT_RULES: MerchantRule[] = [
     categoryId: 'cat_transfers',
     isInternalTransfer: true,
   },
+  // Groceries & Quick Commerce (Specific quick-commerce checked before general food)
+  {
+    keywords: ['swiggy instamart', 'instamart', 'blinkit', 'zepto', 'bigbasket', 'bb daily', 'dmart', 'd-mart', 'nature basket', 'supermarket', 'kirana', 'vegetables', 'fruits'],
+    categoryId: 'cat_groceries',
+  },
   // Food & dining
   {
     keywords: ['swiggy', 'zomato', 'mcdonald', 'starbucks', 'chai point', 'dominos', 'kfc', 'eatclub', 'burger king', 'subway', 'haldiram', 'barbeque nation', 'cafe', 'restaurant', 'dhaba'],
     categoryId: 'cat_food',
-  },
-  // Groceries & Quick Commerce
-  {
-    keywords: ['blinkit', 'zepto', 'instamart', 'bigbasket', 'bb daily', 'dmart', 'd-mart', 'nature basket', 'supermarket', 'kirana', 'vegetables', 'fruits'],
-    categoryId: 'cat_groceries',
   },
   // Shopping
   {
@@ -110,15 +130,19 @@ export function suggestCategory(
 ): CategorizationResult {
   const combined = `${merchant.toLowerCase()} ${description.toLowerCase()}`.trim();
 
-  // 1. Check custom user rules first
+  // 1. Check custom user rules first (learned mappings)
   for (const rule of customRules) {
     if (rule.keywords.some(kw => combined.includes(kw.toLowerCase()))) {
+      const { tier, label } = getConfidenceTier(0.98);
       return {
         categoryId: rule.categoryId,
         isCreditCardPayment: !!rule.isCreditCardPayment,
         isInternalTransfer: !!rule.isInternalTransfer,
-        confidence: 0.95,
+        confidence: 0.98,
+        confidenceTier: tier,
+        confidenceLabel: label,
         matchedRule: rule.keywords[0],
+        isCustomLearned: true,
       };
     }
   }
@@ -127,12 +151,20 @@ export function suggestCategory(
   for (const rule of MERCHANT_RULES) {
     for (const kw of rule.keywords) {
       if (combined.includes(kw)) {
+        // Higher confidence if merchant name explicitly matches rather than loose description
+        const isMerchantMatch = merchant.toLowerCase().includes(kw);
+        const score = isMerchantMatch ? 0.92 : 0.75;
+        const { tier, label } = getConfidenceTier(score);
+
         return {
           categoryId: rule.categoryId,
           isCreditCardPayment: !!rule.isCreditCardPayment,
           isInternalTransfer: !!rule.isInternalTransfer,
-          confidence: 0.9,
+          confidence: score,
+          confidenceTier: tier,
+          confidenceLabel: label,
           matchedRule: kw,
+          isCustomLearned: false,
           notes: rule.isCreditCardPayment 
             ? 'Identified as Credit Card Bill Payment: excluded from daily spending to avoid double counting purchases.'
             : undefined,
@@ -141,11 +173,15 @@ export function suggestCategory(
     }
   }
 
-  // Fallback to "Other"
+  // Fallback to "Other" with needs_review tier
+  const { tier, label } = getConfidenceTier(0.25);
   return {
     categoryId: 'cat_other',
     isCreditCardPayment: false,
     isInternalTransfer: false,
-    confidence: 0.3,
+    confidence: 0.25,
+    confidenceTier: tier,
+    confidenceLabel: label,
+    isCustomLearned: false,
   };
 }
