@@ -1,0 +1,35 @@
+# PAISA Production Robots Configuration
+# https://paisa.money
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /faq
+Allow: /help
+Allow: /privacy
+Allow: /terms
+Allow: /cookie-policy
+Allow: /disclaimer
+Allow: /data-deletion
+Allow: /data-retention
+Allow: /security
+Allow: /changelog
+Allow: /contact
+
+# Protect private financial dashboards & authenticated sessions from search engine crawlers
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /budgets
+Disallow: /goals
+Disallow: /recurring
+Disallow: /analytics
+Disallow: /insights
+Disallow: /accounts
+Disallow: /settings
+Disallow: /auth/
+Disallow: /vault/
+Disallow: /api/
+
+Sitemap: https://paisa.money/sitemap.xml

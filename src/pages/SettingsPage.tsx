@@ -8,7 +8,14 @@ import {
   Download,
   Trash2,
   CheckCircle2,
+  HelpCircle,
+  FileText,
+  Lock,
+  Mail,
+  ExternalLink,
 } from 'lucide-react';
+import { PublicPageModal } from '../components/public/PublicPageModal';
+import { PublicPageId } from '../components/public/PublicPagesContent';
 
 export const SettingsPage: React.FC = () => {
   const profile = store.getProfile();
@@ -30,6 +37,7 @@ export const SettingsPage: React.FC = () => {
   const [tone, setTone] = useState<RealityTone>(notifs.preferred_tone);
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [activePublicPage, setActivePublicPage] = useState<PublicPageId | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,6 +296,66 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Help, Support & Legal Transparency */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+        <div className="section-title text-[#7F899F]">Help, Privacy & Legal Information</div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            type="button"
+            onClick={() => setActivePublicPage('help')}
+            className="p-3.5 rounded-xl border border-[#EDE8E0] hover:bg-[#FAF8F5] text-left transition-colors flex flex-col gap-1.5"
+          >
+            <HelpCircle className="w-4 h-4 text-[#D4952B]" />
+            <span className="text-xs font-bold text-[#181D26]">Help Centre</span>
+            <span className="text-[10px] text-[#7F899F]">Guides & FAQs</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePublicPage('security')}
+            className="p-3.5 rounded-xl border border-[#EDE8E0] hover:bg-[#FAF8F5] text-left transition-colors flex flex-col gap-1.5"
+          >
+            <Lock className="w-4 h-4 text-[#2E8B57]" />
+            <span className="text-xs font-bold text-[#181D26]">Security & Trust</span>
+            <span className="text-[10px] text-[#7F899F]">Zero passwords</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePublicPage('privacy')}
+            className="p-3.5 rounded-xl border border-[#EDE8E0] hover:bg-[#FAF8F5] text-left transition-colors flex flex-col gap-1.5"
+          >
+            <Shield className="w-4 h-4 text-[#3B82F6]" />
+            <span className="text-xs font-bold text-[#181D26]">Privacy Policy</span>
+            <span className="text-[10px] text-[#7F899F]">DPDP 2023 Notice</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePublicPage('contact')}
+            className="p-3.5 rounded-xl border border-[#EDE8E0] hover:bg-[#FAF8F5] text-left transition-colors flex flex-col gap-1.5"
+          >
+            <Mail className="w-4 h-4 text-[#8B5CF6]" />
+            <span className="text-xs font-bold text-[#181D26]">Contact Support</span>
+            <span className="text-[10px] text-[#7F899F]">Bug report & ideas</span>
+          </button>
+        </div>
+
+        <div className="pt-2 text-center text-[11px] text-[#7F899F]">
+          PAISA v1.0.0 • Non-custodial personal finance for India • Licensed under MIT
+        </div>
+      </div>
+
+      {/* Public Page Modal Dialog */}
+      {activePublicPage && (
+        <PublicPageModal
+          isOpen={true}
+          initialPage={activePublicPage}
+          onClose={() => setActivePublicPage(null)}
+        />
+      )}
     </div>
   );
 };

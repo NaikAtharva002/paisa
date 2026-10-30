@@ -1,0 +1,25 @@
+{
+  "short_name": "PAISA",
+  "name": "PAISA — Daily Money Reality Check",
+  "description": "Your salary has a story. Find out where it goes. Real-time daily budget reality checks for India.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "48x48",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF8F5",
+  "theme_color": "#FAF8F5",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "productivity", "utilities"]
+}

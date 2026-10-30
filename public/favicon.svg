@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="12" fill="#FAF8F5"/>
+  <rect x="1" y="1" width="46" height="46" rx="11" stroke="#EDE8E0" stroke-width="2"/>
+  <path d="M34 16C16 20 11.8 32.34 7.64 42.68L11.42 44L13.42 39.4C14.7 40 15.6 40 16 40C38 40 44 6 44 6C42 10 28 10.5 18 12.5S4 23 4 27S7.5 34.5 7.5 34.5C14 23.5 34 16 34 16Z" fill="url(#paisa-leaf-grad)"/>
+  <defs>
+    <linearGradient id="paisa-leaf-grad" x1="4" y1="44" x2="44" y2="6" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#D4952B"/>
+      <stop offset="100%" stopColor="#E5AB4B"/>
+    </linearGradient>
+  </defs>
+</svg>

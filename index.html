@@ -2,16 +2,94 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%230B132B'/><circle cx='50' cy='50' r='42' fill='%2310B981'/><text x='50' y='65' font-size='44' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui, sans-serif'>₹</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0B132B" />
-    <meta name="description" content="Paisa — Your salary has a story. Find out where it goes. Real-time daily budget reality checks for India." />
+    <title>PAISA — Your Daily Money Reality Check | Personal Finance for India</title>
+    
+    <!-- Core Identity & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="canonical" href="https://paisa.money/" />
+    <meta name="theme-color" content="#FAF8F5" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- Search Engine & Discovery Metadata -->
+    <meta name="description" content="PAISA brings clarity to your salary. Experience real-time daily budget reality checks, Indian bank statement imports (CSV/JSON), intelligent category analytics, and privacy-first local storage. Zero banking passwords stored." />
+    <meta name="keywords" content="personal finance India, daily expense tracker, budget reality check, salary tracker, UPI expense tracker, Indian money manager, integer paise calculations, bank statement import, financial analytics" />
+    <meta name="author" content="PAISA" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, Slack) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PAISA" />
+    <meta property="og:title" content="PAISA — Your Daily Money Reality Check" />
+    <meta property="og:description" content="Your salary has a story. Find out where it goes. Experience real-time daily budget reality checks, Indian statement imports, and privacy-first financial insights." />
+    <meta property="og:url" content="https://paisa.money/" />
+    <meta property="og:image" content="https://paisa.money/icon.svg" />
+    <meta property="og:image:alt" content="PAISA — Daily Money Reality Check Logo & Dashboard Preview" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PAISA — Your Daily Money Reality Check" />
+    <meta name="twitter:description" content="Your salary has a story. Find out where it goes. Real-time daily budget reality checks for India. 100% privacy-first." />
+    <meta name="twitter:image" content="https://paisa.money/icon.svg" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <title>Paisa — Your Daily Money Reality Check</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Structured Data (JSON-LD) for Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://paisa.money/#website",
+          "url": "https://paisa.money/",
+          "name": "PAISA",
+          "description": "Daily Money Reality Check for India",
+          "inLanguage": "en-IN"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://paisa.money/#app",
+          "name": "PAISA",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web, Android, iOS (Progressive Web Application)",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR"
+          },
+          "featureList": [
+            "Daily Budget Reality Checks",
+            "Exact Integer Paise Arithmetic",
+            "Bank Statement Imports (CSV & JSON)",
+            "Automated Category Tagging for Indian UPI Merchants",
+            "Recurring Bills & Subscription Tracking with Leap-Year Month Clamping",
+            "Offline-First Local Vault with Tenant-Scoped Backups",
+            "RBI Account Aggregator Simulation Architecture",
+            "AI Spending Forecasts and Category Anomaly Detection"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://paisa.money/#organization",
+          "name": "PAISA",
+          "url": "https://paisa.money/",
+          "logo": "https://paisa.money/icon.svg",
+          "sameAs": [
+            "https://github.com/NaikAtharva002/paisa"
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
+  <body class="bg-[#FAF8F5] text-[#181D26] antialiased selection:bg-[#F0D49C] selection:text-[#181D26]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

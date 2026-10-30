@@ -152,6 +152,22 @@ export function App() {
           {currentTab === 'bank' && <BankAccountsPage />}
 
           {currentTab === 'settings' && <SettingsPage />}
+
+          {!['dashboard', 'transactions', 'budgets', 'goals', 'recurring', 'analytics', 'insights', 'bank', 'settings'].includes(currentTab) && (
+            <div className="p-12 text-center space-y-4 max-w-md mx-auto my-12 bg-white rounded-3xl border border-[#EDE8E0] shadow-card">
+              <div className="w-14 h-14 rounded-2xl bg-[#FCF8EE] border border-[#EBD7AF] flex items-center justify-center text-[#D4952B] mx-auto text-xl font-black">
+                404
+              </div>
+              <h3 className="text-lg font-bold text-[#181D26]">Screen Not Found</h3>
+              <p className="text-xs text-[#7F899F]">The section you are trying to view does not exist or has been relocated.</p>
+              <button
+                onClick={() => setCurrentTab('dashboard')}
+                className="btn-primary text-xs px-5 py-2.5"
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          )}
         </main>
       </div>
 

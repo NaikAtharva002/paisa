@@ -10,7 +10,13 @@ import {
   Zap,
   BarChart3,
   Bell,
+  HelpCircle,
+  Lock,
+  FileText,
+  Mail,
 } from 'lucide-react';
+import { PublicPageModal } from '../components/public/PublicPageModal';
+import { PublicPageId } from '../components/public/PublicPagesContent';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -77,22 +83,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   const remaining = Number((dailyBudget - totalSpent).toFixed(2));
   const pctUsed = Number(((totalSpent / dailyBudget) * 100).toFixed(1));
 
+  // Public Page Modal state
+  const [activePublicPage, setActivePublicPage] = useState<PublicPageId | null>(null);
+
+  const openPublicPage = (page: PublicPageId) => {
+    setActivePublicPage(page);
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#181D26] flex flex-col justify-between selection:bg-[#D4952B]/20 selection:text-[#8C5D17]">
       {/* Top Navbar */}
       <nav className="w-full border-b border-[#EDE8E0] px-6 py-4 bg-[#FAF8F5]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#D4952B] to-[#E5AB4B] flex items-center justify-center text-white shadow-md shadow-[#D4952B]/20">
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
-              </svg>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#D4952B] to-[#E5AB4B] flex items-center justify-center text-white shadow-md shadow-[#D4952B]/20">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
+                </svg>
+              </div>
+              <div>
+                <span className="font-black text-lg tracking-tight text-[#181D26]">PAISA</span>
+                <span className="ml-2 text-xs text-[#7F899F] hidden sm:inline font-semibold">
+                  Daily Money Reality Check
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="font-black text-lg tracking-tight text-[#181D26]">PAISA</span>
-              <span className="ml-2 text-xs text-[#7F899F] hidden sm:inline font-semibold">
-                Daily Money Reality Check
-              </span>
+
+            {/* Navigation Links for Public Pages */}
+            <div className="hidden md:flex items-center gap-5 text-xs font-semibold text-[#3D4658]">
+              <button onClick={() => openPublicPage('features')} className="hover:text-[#D4952B] transition-colors">
+                Features
+              </button>
+              <button onClick={() => openPublicPage('pricing')} className="hover:text-[#D4952B] transition-colors">
+                Pricing
+              </button>
+              <button onClick={() => openPublicPage('about')} className="hover:text-[#D4952B] transition-colors">
+                About
+              </button>
+              <button onClick={() => openPublicPage('faq')} className="hover:text-[#D4952B] transition-colors">
+                FAQ
+              </button>
+              <button onClick={() => openPublicPage('security')} className="hover:text-[#D4952B] transition-colors">
+                Security
+              </button>
             </div>
           </div>
 
@@ -288,17 +322,147 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[#EDE8E0] px-6 py-6 text-center text-xs text-[#7F899F] bg-white">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>PAISA — Personal Finance Management for India. Designed with care.</div>
-          <div className="flex items-center gap-4 text-[#7F899F]">
-            <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-[#2E8B57]" /> DPDP Act Compliant</span>
-            <span>•</span>
-            <span className="flex items-center gap-1"><Landmark className="w-3.5 h-3.5 text-[#3B82F6]" /> RBI AA Architecture</span>
+      {/* Multi-Column Comprehensive Public Footer */}
+      <footer className="border-t border-[#EDE8E0] bg-white text-xs text-[#3D4658] pt-12 pb-8 px-6">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Column 1: Brand & Mission */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#D4952B] to-[#E5AB4B] flex items-center justify-center text-white">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                    <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
+                  </svg>
+                </div>
+                <span className="font-black text-base text-[#181D26]">PAISA</span>
+              </div>
+              <p className="text-xs text-[#7F899F] leading-relaxed">
+                Calm, privacy-first personal finance designed for Indian salary earners. Your salary has a story; find out where it goes.
+              </p>
+              <div className="pt-1">
+                <a
+                  href="https://github.com/NaikAtharva002/paisa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#181D26] hover:text-[#D4952B] transition-colors"
+                >
+                  GitHub Repository ↗
+                </a>
+              </div>
+            </div>
+
+            {/* Column 2: Product */}
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-[#181D26] uppercase tracking-wider text-[11px]">Product</h4>
+              <ul className="space-y-2 text-xs text-[#7F899F]">
+                <li>
+                  <button onClick={() => openPublicPage('features')} className="hover:text-[#181D26] transition-colors">
+                    Features
+                  </button>
+                </li>
+                <li>
+                  <button onClick={onExploreDemo} className="hover:text-[#181D26] transition-colors">
+                    Interactive Demo
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('pricing')} className="hover:text-[#181D26] transition-colors">
+                    Pricing & Plans
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('changelog')} className="hover:text-[#181D26] transition-colors">
+                    Changelog (v1.0.0)
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Support & Resources */}
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-[#181D26] uppercase tracking-wider text-[11px]">Resources & Help</h4>
+              <ul className="space-y-2 text-xs text-[#7F899F]">
+                <li>
+                  <button onClick={() => openPublicPage('help')} className="hover:text-[#181D26] transition-colors">
+                    Help Centre & Guides
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('faq')} className="hover:text-[#181D26] transition-colors">
+                    Frequently Asked Questions
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('security')} className="hover:text-[#181D26] transition-colors">
+                    Security & Privacy Architecture
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('contact')} className="hover:text-[#181D26] transition-colors">
+                    Contact & Report a Bug
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Legal & Compliance */}
+            <div className="space-y-2.5">
+              <h4 className="font-bold text-[#181D26] uppercase tracking-wider text-[11px]">Legal & Compliance</h4>
+              <ul className="space-y-2 text-xs text-[#7F899F]">
+                <li>
+                  <button onClick={() => openPublicPage('privacy')} className="hover:text-[#181D26] transition-colors">
+                    Privacy Policy (DPDP 2023)
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('terms')} className="hover:text-[#181D26] transition-colors">
+                    Terms & Conditions
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('cookies')} className="hover:text-[#181D26] transition-colors">
+                    Cookie & Storage Policy
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('disclaimer')} className="hover:text-[#181D26] transition-colors">
+                    Financial Disclaimer
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => openPublicPage('data-deletion')} className="hover:text-[#181D26] transition-colors">
+                    Data Deletion & Retention
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Copyright & Regulatory Badges */}
+          <div className="border-t border-[#EDE8E0] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#7F899F]">
+            <div>© 2026 PAISA. Designed for India with calm precision.</div>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 text-[#2E8B57]" /> DPDP Act 2023 Compliant
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Landmark className="w-3.5 h-3.5 text-[#3B82F6]" /> RBI AA Ready
+              </span>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* Public Page Modal Dialog */}
+      {activePublicPage && (
+        <PublicPageModal
+          isOpen={true}
+          initialPage={activePublicPage}
+          onClose={() => setActivePublicPage(null)}
+          onGetStarted={onGetStarted}
+        />
+      )}
     </div>
   );
 };
