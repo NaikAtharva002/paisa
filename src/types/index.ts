@@ -135,6 +135,7 @@ export interface BankConsent {
   user_id: string;
   provider: 'Setu AA' | 'Finvu' | 'OneMoney' | 'Anumati' | 'Demo AA Gateway';
   consent_reference: string;
+  consent_handle?: string;
   status: 'ACTIVE' | 'REVOKED' | 'EXPIRED' | 'PAUSED';
   data_range_from: string;
   data_range_to: string;
@@ -163,4 +164,17 @@ export interface DailySpendingReport {
   hasTransactions: boolean;
   message: string;
   actionSuggestion: string;
+}
+
+export interface ImportRecord {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_format: 'csv' | 'json' | 'pdf' | 'xlsx';
+  total_detected: number;
+  imported_count: number;
+  duplicates_skipped: number;
+  failed_count: number;
+  created_at: string;
+  transaction_ids: string[];
 }

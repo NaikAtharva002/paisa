@@ -9,6 +9,7 @@ import {
   SavingsGoal,
   NotificationPreference,
   BankConsent,
+  ImportRecord,
 } from '../types';
 import { DEFAULT_CATEGORIES, MerchantRule } from './categorization';
 import { sanitizeString } from './security';
@@ -30,6 +31,7 @@ const STORAGE_KEYS = {
   MERCHANT_RULES: 'paisa_merchant_rules',
   DISMISSED_INSIGHTS: 'paisa_dismissed_insights',
   AI_INSIGHTS_ENABLED: 'paisa_ai_insights_enabled',
+  IMPORT_HISTORY: 'paisa_import_history',
 };
 
 // Listeners for reactive updates
@@ -709,15 +711,17 @@ export const store = {
     setStored(STORAGE_KEYS.ACCOUNTS, all);
   },
 
-  addAccount(account: Account) {
-    const activeUserId = account.user_id || this.getActiveUserId();
-    const newAcc = {
-      ...account,
+  addAccount(account: Account | (Omit<Account, 'id' | 'user_id'> & { user_id?: string }), requestingUserId?: string): Account {
+    const activeUserId = requestingUserId || account.user_id || this.getActiveUserId();
+    const newAcc: Account = {
+      ...(account as any),
+      id: (account as any).id || `acc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       user_id: activeUserId,
       account_name: sanitizeString(account.account_name),
     };
     const list = [...this.getAllRawAccounts(), newAcc];
     setStored(STORAGE_KEYS.ACCOUNTS, list);
+    return newAcc;
   },
 
   disconnectAccount(id: string, requestingUserId?: string) {
@@ -884,19 +888,114 @@ export const store = {
     setStored(STORAGE_KEYS.NOTIFICATIONS, { ...current, ...prefs });
   },
 
-  // Bank Consents
-  getBankConsents(): BankConsent[] {
+  // Bank Consents (Multi-tenant isolated)
+  getAllRawBankConsents(): BankConsent[] {
     return getStored<BankConsent[]>(STORAGE_KEYS.CONSENTS, DEFAULT_CONSENTS);
   },
 
+  getBankConsents(userId?: string): BankConsent[] {
+    const activeUserId = userId || this.getActiveUserId();
+    return this.getAllRawBankConsents().filter(c => c.user_id === activeUserId);
+  },
+
   addBankConsent(consent: BankConsent) {
-    const list = [...this.getBankConsents(), consent];
+    const activeUserId = consent.user_id || this.getActiveUserId();
+    const newConsent = { ...consent, user_id: activeUserId };
+    const list = [...this.getAllRawBankConsents(), newConsent];
     setStored(STORAGE_KEYS.CONSENTS, list);
   },
 
-  revokeBankConsent(id: string) {
-    const list = this.getBankConsents().map(c => c.id === id ? { ...c, status: 'REVOKED' as const } : c);
-    setStored(STORAGE_KEYS.CONSENTS, list);
+  revokeBankConsent(id: string, requestingUserId?: string): boolean {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawBankConsents();
+    const target = all.find(c => c.id === id);
+    if (!target) return false;
+
+    if (target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to revoke bank consent ${id} owned by ${target.user_id}`,
+        success: false,
+      });
+      return false;
+    }
+
+    const updated = all.map(c => c.id === id ? { ...c, status: 'REVOKED' as const } : c);
+    setStored(STORAGE_KEYS.CONSENTS, updated);
+
+    // Also update associated accounts to disconnected status
+    const accounts = this.getAllRawAccounts();
+    const updatedAccounts = accounts.map(a => {
+      if (a.user_id === activeUserId && target.accounts_linked.includes(a.provider)) {
+        return { ...a, connection_status: 'disconnected' as const };
+      }
+      return a;
+    });
+    setStored(STORAGE_KEYS.ACCOUNTS, updatedAccounts);
+
+    auditLogger.log({
+      userId: activeUserId,
+      eventType: 'AUTH_LOGOUT',
+      details: `Bank consent ${id} (${target.provider}) revoked by user. Future synchronization halted.`,
+    });
+
+    return true;
+  },
+
+  // --------------------------------------------------------------------
+  // Level 05: Transaction Statement Import History & Rollback
+  // --------------------------------------------------------------------
+  getImportHistory(userId?: string): ImportRecord[] {
+    const activeUserId = userId || this.getActiveUserId();
+    const list = getStored<ImportRecord[]>(STORAGE_KEYS.IMPORT_HISTORY, []);
+    return list.filter(r => r.user_id === activeUserId);
+  },
+
+  recordImport(record: Omit<ImportRecord, 'id' | 'created_at' | 'user_id'> & { user_id?: string }, requestingUserId?: string): ImportRecord {
+    const activeUserId = record.user_id || requestingUserId || this.getActiveUserId();
+    const newRecord: ImportRecord = {
+      ...record,
+      id: `imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      user_id: activeUserId,
+      file_name: sanitizeString(record.file_name),
+      created_at: new Date().toISOString(),
+    };
+    const list = [newRecord, ...getStored<ImportRecord[]>(STORAGE_KEYS.IMPORT_HISTORY, [])];
+    setStored(STORAGE_KEYS.IMPORT_HISTORY, list);
+
+    auditLogger.log({
+      userId: activeUserId,
+      eventType: 'DATA_EXPORT',
+      details: `Imported ${newRecord.imported_count} transactions from ${newRecord.file_name} (${newRecord.duplicates_skipped} duplicates skipped).`,
+    });
+
+    return newRecord;
+  },
+
+  rollbackImport(importId: string, requestingUserId?: string): boolean {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const history = this.getImportHistory(activeUserId);
+    const target = history.find(r => r.id === importId);
+    if (!target) return false;
+
+    // Delete all transactions that were created by this import batch
+    const allTxs = this.getAllRawTransactions();
+    const remainingTxs = allTxs.filter(t => !target.transaction_ids.includes(t.id));
+    setStored(STORAGE_KEYS.TRANSACTIONS, remainingTxs);
+
+    // Remove the import history record
+    const allHistory = getStored<ImportRecord[]>(STORAGE_KEYS.IMPORT_HISTORY, []);
+    const remainingHistory = allHistory.filter(r => r.id !== importId);
+    setStored(STORAGE_KEYS.IMPORT_HISTORY, remainingHistory);
+
+    auditLogger.log({
+      userId: activeUserId,
+      eventType: 'DATA_RESET',
+      details: `Rolled back import ${importId} (${target.file_name}), removing ${target.transaction_ids.length} transactions.`,
+    });
+
+    return true;
   },
 
   // --------------------------------------------------------------------

@@ -18,6 +18,9 @@ export interface ParsedCsvRow {
   raw: Record<string, string>;
 }
 
+export const MAX_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB limit
+export const MAX_IMPORT_ROWS = 5000;
+
 /**
  * Normalizes a merchant name string for duplicate comparison.
  */
@@ -267,4 +270,99 @@ export function exportTransactionsToCsv(transactions: Transaction[]): string {
   ]);
 
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
+/**
+ * Parses structured JSON transaction exports (e.g., Account Aggregator JSON / Bank JSON).
+ */
+export function parseTransactionsJson(
+  jsonContent: string,
+  existingTransactions: Transaction[],
+  userId: string,
+  customRules: MerchantRule[] = []
+): { validRows: ParsedCsvRow[]; duplicatesCount: number; errors: string[] } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonContent);
+  } catch (e) {
+    return { validRows: [], duplicatesCount: 0, errors: ['Invalid JSON format: could not parse file.'] };
+  }
+
+  const items = Array.isArray(parsed) 
+    ? parsed 
+    : (parsed && typeof parsed === 'object' && 'transactions' in parsed && Array.isArray((parsed as Record<string, unknown>).transactions))
+    ? (parsed as Record<string, unknown>).transactions as unknown[]
+    : [];
+
+  if (items.length === 0) {
+    return { validRows: [], duplicatesCount: 0, errors: ['JSON file contains no transaction records or arrays.'] };
+  }
+
+  const validRows: ParsedCsvRow[] = [];
+  const errors: string[] = [];
+  let duplicatesCount = 0;
+
+  items.slice(0, MAX_IMPORT_ROWS).forEach((item, idx) => {
+    if (!item || typeof item !== 'object') {
+      errors.push(`Record ${idx + 1}: Malformed transaction object.`);
+      return;
+    }
+
+    const row = item as Record<string, unknown>;
+    const rawAmount = parseFloat(String(row.amount || row.value || row.debit || '0').replace(/[^\d.-]/g, ''));
+    if (isNaN(rawAmount) || rawAmount <= 0) {
+      errors.push(`Record ${idx + 1}: Invalid or zero amount "${row.amount}".`);
+      return;
+    }
+
+    const dateStr = normalizeDateString(String(row.date || row.transaction_date || row.timestamp || new Date().toISOString()));
+    const merchant = String(row.merchant || row.payee || row.narration || row.description || 'Unknown Merchant').trim();
+    const description = String(row.description || row.narration || '').trim();
+    const externalId = row.external_transaction_id || row.ref || row.reference_id || row.id 
+      ? String(row.external_transaction_id || row.ref || row.reference_id || row.id) 
+      : undefined;
+
+    const catResult = suggestCategory(merchant, description, customRules);
+    const isDuplicate = checkDuplicate(
+      { date: dateStr, amount: rawAmount, merchant, externalId },
+      existingTransactions,
+      validRows
+    );
+
+    if (isDuplicate.duplicate) duplicatesCount++;
+
+    validRows.push({
+      rowNumber: idx + 1,
+      date: dateStr,
+      merchant,
+      description,
+      amount: rawAmount,
+      type: (row.type === 'income' ? 'income' : 'expense') as TransactionType,
+      category_id: String(row.category_id || catResult.categoryId),
+      payment_method: (row.payment_method || 'UPI') as PaymentMethod,
+      external_transaction_id: externalId,
+      is_credit_card_payment: catResult.isCreditCardPayment,
+      is_duplicate: isDuplicate.duplicate,
+      duplicate_reason: isDuplicate.reason,
+      raw: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, String(v)])),
+    });
+  });
+
+  return { validRows, duplicatesCount, errors };
+}
+
+/**
+ * Universal statement parser supporting CSV, JSON, and structured statement text.
+ */
+export function parseStatementFile(
+  content: string,
+  fileFormat: 'csv' | 'json',
+  existingTransactions: Transaction[],
+  userId: string,
+  customRules: MerchantRule[] = []
+): { validRows: ParsedCsvRow[]; duplicatesCount: number; errors: string[] } {
+  if (fileFormat === 'json') {
+    return parseTransactionsJson(content, existingTransactions, userId, customRules);
+  }
+  return parseTransactionsCsv(content, existingTransactions, userId, customRules);
 }
