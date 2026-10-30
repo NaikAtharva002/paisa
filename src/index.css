@@ -182,3 +182,34 @@ input[type="range"]::-webkit-slider-thumb { background:var(--forest); box-shadow
  .paisa-hero { min-height:220px; border-radius:20px; }
  .paisa-hero-foot { align-items:flex-start; flex-direction:column; }
 }
+
+/* Shared entry surfaces: landing and first-run setup */
+.paisa-entry { background:var(--paper); color:var(--ink); }
+.paisa-entry [class~="bg-[#06091A]"],
+.paisa-entry [class~="bg-slate-950"],
+.paisa-entry [class~="bg-slate-900"],
+.paisa-entry [class~="bg-slate-900/90"],
+.paisa-entry [class~="bg-slate-900/80"],
+.paisa-entry [class~="bg-slate-900/60"],
+.paisa-entry [class~="bg-slate-800"],
+.paisa-entry [class~="bg-slate-800/80"],
+.paisa-entry [class~="bg-slate-800/60"],
+.paisa-entry [class~="bg-slate-800/40"],
+.paisa-entry [class~="bg-[#0D1426]"] { background-color:#fff !important; }
+.paisa-entry [class~="text-white"],
+.paisa-entry [class~="text-slate-100"] { color:#1b2922 !important; }
+.paisa-entry [class~="text-slate-200"] { color:#35453b !important; }
+.paisa-entry [class~="text-slate-300"] { color:#526258 !important; }
+.paisa-entry [class~="text-slate-400"] { color:#748178 !important; }
+.paisa-entry [class~="text-slate-500"] { color:#89958d !important; }
+.paisa-entry [class~="border-slate-800"],
+.paisa-entry [class~="border-slate-700"],
+.paisa-entry [class~="border-white/[0.08]"],
+.paisa-entry [class~="border-white/[0.06]"] { border-color:#e5ebe4 !important; }
+.paisa-entry .btn-primary { color:#fff !important; }
+.paisa-entry [class~="text-emerald-400"] { color:#28704c !important; }
+.paisa-entry [class~="bg-emerald-500/10"] { background-color:#e8f3eb !important; }
+.paisa-entry [class~="bg-emerald-500/20"] { background-color:#e5f1e8 !important; }
+.paisa-entry [class~="bg-emerald-500"] { background-color:#2b7650 !important; }
+.paisa-entry [class~="bg-gradient-to-br"] { color:#fff; }
+.paisa-entry .card { background:#fff; border-color:var(--line); box-shadow:0 12px 34px rgba(29,53,40,.06); }
