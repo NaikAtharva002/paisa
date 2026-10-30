@@ -2,90 +2,93 @@ import React from 'react';
 import {
   LayoutDashboard,
   Receipt,
-  PieChart,
   Target,
-  Landmark,
-  Settings as SettingsIcon,
-  CalendarDays,
+  Trophy,
+  Menu,
 } from 'lucide-react';
 
 export type NavTab =
   | 'dashboard'
   | 'transactions'
   | 'budgets'
-  | 'analytics'
+  | 'goals'
   | 'recurring'
+  | 'analytics'
+  | 'insights'
   | 'bank'
   | 'settings';
 
 interface BottomNavProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
+  onOpenMobileMenu?: () => void;
 }
 
-const NAV_ITEMS: Array<{ id: NavTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: 'dashboard', label: 'Today', icon: LayoutDashboard },
-  { id: 'transactions', label: 'Spends', icon: Receipt },
-  { id: 'budgets', label: 'Goals', icon: Target },
-  { id: 'analytics', label: 'Analytics', icon: PieChart },
-  { id: 'recurring', label: 'Bills', icon: CalendarDays },
-  { id: 'bank', label: 'Bank Sync', icon: Landmark },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
-];
+export const BottomNav: React.FC<BottomNavProps> = ({
+  currentTab,
+  onSelectTab,
+  onOpenMobileMenu,
+}) => {
+  const mobileNavItems: Array<{
+    id: NavTab | 'more';
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    onClick: () => void;
+  }> = [
+    {
+      id: 'dashboard',
+      label: 'Home',
+      icon: LayoutDashboard,
+      onClick: () => onSelectTab('dashboard'),
+    },
+    {
+      id: 'transactions',
+      label: 'Transactions',
+      icon: Receipt,
+      onClick: () => onSelectTab('transactions'),
+    },
+    {
+      id: 'budgets',
+      label: 'Budget',
+      icon: Target,
+      onClick: () => onSelectTab('budgets'),
+    },
+    {
+      id: 'goals',
+      label: 'Goals',
+      icon: Trophy,
+      onClick: () => onSelectTab('goals'),
+    },
+    {
+      id: 'more',
+      label: 'More',
+      icon: Menu,
+      onClick: () => (onOpenMobileMenu ? onOpenMobileMenu() : onSelectTab('settings')),
+    },
+  ];
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onSelectTab }) => (
-  <>
-    {/* Mobile bottom navigation bar */}
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#06091A]/95 backdrop-blur-xl border-t border-white/[0.08] px-1 pt-1 pb-2 md:hidden">
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#EDE8E0] px-2 py-2 lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
       <div className="flex items-center justify-around">
-        {NAV_ITEMS.slice(0, 5).map(item => {
+        {mobileNavItems.map((item) => {
           const Icon = item.icon;
-          const active = currentTab === item.id;
+          const isActive = currentTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-150 ${
-                active ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'
+              onClick={item.onClick}
+              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 ${
+                isActive ? 'text-[#D4952B] font-bold' : 'text-[#7F899F] hover:text-[#181D26]'
               }`}
             >
-              {active && (
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-emerald-400" />
-              )}
-              <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-emerald-500/15' : ''}`}>
-                <Icon className="w-[18px] h-[18px]" />
+              <div className={`p-1 rounded-xl transition-all ${isActive ? 'bg-[#FFF6E6]' : ''}`}>
+                <Icon className="w-5 h-5" />
               </div>
-              <span className={`text-[10px] font-semibold mt-0.5 tracking-wide ${active ? 'text-emerald-400' : 'text-slate-500'}`}>
-                {item.label}
-              </span>
+              <span className="text-[10px] mt-0.5 tracking-tight">{item.label}</span>
             </button>
           );
         })}
       </div>
     </nav>
-
-    {/* Desktop sub-nav bar */}
-    <div className="hidden md:block border-b border-white/[0.06] bg-[#06091A]/60 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-8 flex items-center gap-1.5 py-2.5 overflow-x-auto">
-        {NAV_ITEMS.map(item => {
-          const Icon = item.icon;
-          const active = currentTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
-                active
-                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
-              }`}
-            >
-              <Icon className={`w-3.5 h-3.5 ${active ? 'text-emerald-400' : ''}`} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  </>
-);
+  );
+};

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, PaymentMethod, TransactionType } from '../../types';
 import { store } from '../../lib/storage';
 import { suggestCategory } from '../../lib/categorization';
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface TransactionFormProps {
   initialData?: Transaction | null;
@@ -118,16 +118,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 text-[#181D26]">
       {/* Transaction Type Selector */}
-      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#06091A] border border-white/[0.08]">
+      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0]">
         <button
           type="button"
           onClick={() => setTransactionType('expense')}
           className={`py-2 text-xs font-bold rounded-lg transition-all ${
             transactionType === 'expense'
-              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-[#E06D53] text-white shadow-sm'
+              : 'text-[#7F899F] hover:text-[#181D26]'
           }`}
         >
           Expense (Spends)
@@ -137,8 +137,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           onClick={() => setTransactionType('income')}
           className={`py-2 text-xs font-bold rounded-lg transition-all ${
             transactionType === 'income'
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-[#2E8B57] text-white shadow-sm'
+              : 'text-[#7F899F] hover:text-[#181D26]'
           }`}
         >
           Income (Credit)
@@ -147,9 +147,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       {/* Amount Input with Quick Preset Buttons */}
       <div>
-        <label className="section-title text-slate-400">Amount (INR ₹)</label>
+        <label className="section-title text-[#7F899F]">Amount (INR ₹)</label>
         <div className="relative mt-1">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-bold text-[#7F899F]">
             ₹
           </span>
           <input
@@ -160,7 +160,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             value={amount}
             onChange={e => setAmount(e.target.value)}
             placeholder="0.00"
-            className="input-field pl-9 text-xl font-bold font-mono-num"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xl font-bold font-mono-num text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
           />
         </div>
 
@@ -171,7 +171,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               key={val}
               type="button"
               onClick={() => handleQuickAmount(val)}
-              className="text-[11px] font-mono-num font-semibold px-2 py-0.5 rounded-lg bg-[#06091A] border border-white/[0.08] text-slate-300 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors"
+              className="text-[11px] font-mono-num font-semibold px-2 py-0.5 rounded-lg bg-[#FAF8F5] border border-[#EDE8E0] text-[#3D4658] hover:border-[#D4952B] hover:text-[#181D26] transition-colors"
             >
               +₹{val}
             </button>
@@ -180,7 +180,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => setAmount('')}
-              className="text-[10px] text-slate-500 hover:text-slate-300 ml-auto"
+              className="text-[10px] text-[#7F899F] hover:text-[#181D26] ml-auto font-medium"
             >
               Clear
             </button>
@@ -190,14 +190,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       {/* Merchant / Payee with Popular Suggestions */}
       <div>
-        <label className="section-title text-slate-400">Merchant / Payee</label>
+        <label className="section-title text-[#7F899F]">Merchant / Payee</label>
         <input
           type="text"
           required
           value={merchant}
           onChange={e => setMerchant(e.target.value)}
           placeholder="e.g. Swiggy, Blinkit, Starbucks, Uber"
-          className="input-field mt-1"
+          className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] placeholder-[#9AA4B2] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
         />
 
         {/* Popular Merchant Chips */}
@@ -207,7 +207,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               key={m}
               type="button"
               onClick={() => handleSelectMerchant(m)}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#06091A] border border-white/[0.06] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-colors"
+              className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#FAF8F5] border border-[#EDE8E0] text-[#7F899F] hover:text-[#181D26] hover:border-[#D4952B] transition-colors"
             >
               {m}
             </button>
@@ -218,9 +218,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       {/* Category Selection with AI Auto-detect Badge */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="section-title text-slate-400">Expense Category</label>
+          <label className="section-title text-[#7F899F]">Expense Category</label>
           {autoCatSuggestion && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2E8B57]">
               <Sparkles className="w-3 h-3" /> Auto-detected: {autoCatSuggestion}
             </span>
           )}
@@ -228,10 +228,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         <select
           value={categoryId}
           onChange={e => setCategoryId(e.target.value)}
-          className="input-field bg-[#06091A]"
+          className="w-full px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
         >
           {categories.map(cat => (
-            <option key={cat.id} value={cat.id} className="bg-slate-900 text-slate-200">
+            <option key={cat.id} value={cat.id}>
               {cat.icon} {cat.name}
             </option>
           ))}
@@ -241,14 +241,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       {/* Payment Method & Date/Time Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="section-title text-slate-400">Payment Mode</label>
+          <label className="section-title text-[#7F899F]">Payment Mode</label>
           <select
             value={paymentMethod}
             onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
-            className="input-field mt-1 bg-[#06091A]"
+            className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
           >
             {paymentMethods.map(method => (
-              <option key={method} value={method} className="bg-slate-900 text-slate-200">
+              <option key={method} value={method}>
                 {method}
               </option>
             ))}
@@ -256,34 +256,34 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         </div>
 
         <div>
-          <label className="section-title text-slate-400">Date & Time</label>
+          <label className="section-title text-[#7F899F]">Date & Time</label>
           <input
             type="datetime-local"
             value={transactionDate}
             onChange={e => setTransactionDate(e.target.value)}
-            className="input-field mt-1"
+            className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
           />
         </div>
       </div>
 
       {/* Flags: Unplanned & Credit Card Payment */}
-      <div className="p-3 rounded-xl bg-[#06091A] border border-white/[0.06] space-y-2">
-        <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+      <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] space-y-2">
+        <label className="flex items-center gap-2.5 text-xs text-[#3D4658] cursor-pointer">
           <input
             type="checkbox"
             checked={isUnplanned}
             onChange={e => setIsUnplanned(e.target.checked)}
-            className="rounded accent-emerald-500 w-4 h-4 cursor-pointer"
+            className="rounded accent-[#E06D53] w-4 h-4 cursor-pointer"
           />
           <span>Mark as <strong>Unplanned / Impulse Purchase</strong></span>
         </label>
 
-        <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
+        <label className="flex items-center gap-2.5 text-xs text-[#3D4658] cursor-pointer">
           <input
             type="checkbox"
             checked={isCreditCardPayment}
             onChange={e => setIsCreditCardPayment(e.target.checked)}
-            className="rounded accent-emerald-500 w-4 h-4 cursor-pointer"
+            className="rounded accent-[#2E8B57] w-4 h-4 cursor-pointer"
           />
           <span>Credit card bill payment (excluded from daily spending to prevent double count)</span>
         </label>
@@ -291,28 +291,28 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       {/* Notes */}
       <div>
-        <label className="section-title text-slate-400">Notes (Optional)</label>
+        <label className="section-title text-[#7F899F]">Notes (Optional)</label>
         <input
           type="text"
           value={notes}
           onChange={e => setNotes(e.target.value)}
           placeholder="e.g. Split with Rahul, Office lunch"
-          className="input-field mt-1"
+          className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] placeholder-[#9AA4B2] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
         />
       </div>
 
       {/* Modal Actions */}
-      <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE8E0]">
         <button
           type="button"
           onClick={onCancel}
-          className="btn-secondary"
+          className="btn-secondary text-xs"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="btn-primary"
+          className="btn-primary text-xs"
         >
           {initialData ? 'Update Transaction' : 'Save Expense'}
         </button>

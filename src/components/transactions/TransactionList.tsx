@@ -13,7 +13,6 @@ import {
   Receipt,
   ArrowDownLeft,
   ArrowUpRight,
-  ArrowLeftRight,
   Filter,
 } from 'lucide-react';
 
@@ -33,9 +32,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const catMap = new Map(categories.map(c => [c.id, c.name]));
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterTab, setFilterTab] = useState<'all' | 'expense' | 'income' | 'this_month'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedMethod, setSelectedMethod] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+
+  const now = new Date();
+  const currentMonthPrefix = now.toISOString().slice(0, 7);
 
   // Filter transactions
   const filtered = transactions.filter(tx => {
@@ -47,10 +48,31 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       (tx.notes && tx.notes.toLowerCase().includes(query));
 
     const matchCategory = selectedCategory === 'all' || tx.category_id === selectedCategory;
-    const matchMethod = selectedMethod === 'all' || tx.payment_method === selectedMethod;
-    const matchType = selectedType === 'all' || tx.transaction_type === selectedType;
 
-    return matchSearch && matchCategory && matchMethod && matchType;
+    let matchTab = true;
+    if (filterTab === 'expense') matchTab = tx.transaction_type === 'expense';
+    if (filterTab === 'income') matchTab = tx.transaction_type === 'income';
+    if (filterTab === 'this_month') matchTab = tx.transaction_date.startsWith(currentMonthPrefix);
+
+    return matchSearch && matchCategory && matchTab;
+  });
+
+  // Group by date (Today, Yesterday, Earlier)
+  const todayStr = now.toISOString().slice(0, 10);
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+
+  const groups: { [key: string]: Transaction[] } = {};
+  filtered.forEach(tx => {
+    const dateStr = tx.transaction_date.slice(0, 10);
+    let label = 'Earlier';
+    if (dateStr === todayStr) label = 'Today';
+    else if (dateStr === yesterday) label = 'Yesterday';
+    else {
+      label = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(dateStr));
+    }
+
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(tx);
   });
 
   const handleDelete = (id: string, merchant: string) => {
@@ -71,24 +93,68 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     document.body.removeChild(link);
   };
 
+  // Helper for Reference 2 styled merchant avatar icons
+  const getMerchantAvatar = (merchant: string, isIncome: boolean) => {
+    const lower = merchant.toLowerCase();
+    if (isIncome) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#EBF7EE] text-[#2E8B57] flex items-center justify-center font-bold text-xs shadow-sm">
+          <ArrowDownLeft className="w-5 h-5" />
+        </div>
+      );
+    }
+    if (lower.includes('swiggy')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#FC8019] text-white flex items-center justify-center font-black text-xs shadow-sm">
+          S
+        </div>
+      );
+    }
+    if (lower.includes('blinkit')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#F8CB46] text-[#181D26] flex items-center justify-center font-black text-xs shadow-sm">
+          B
+        </div>
+      );
+    }
+    if (lower.includes('zomato')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#E23744] text-white flex items-center justify-center font-black text-xs shadow-sm">
+          Z
+        </div>
+      );
+    }
+    if (lower.includes('uber') || lower.includes('ola')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#181D26] text-white flex items-center justify-center font-black text-xs shadow-sm">
+          U
+        </div>
+      );
+    }
+    if (lower.includes('zepto')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#9E1BFF] text-white flex items-center justify-center font-black text-xs shadow-sm">
+          Z
+        </div>
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full bg-[#F5F2EB] text-[#7F899F] flex items-center justify-center font-bold text-xs border border-[#EDE8E0]">
+        {merchant.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-4 animate-in">
-      {/* Top action and filter bar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by merchant, Swiggy, UPI, notes..."
-              className="input-field pl-9.5 text-xs"
-            />
+    <div className="space-y-5 animate-in max-w-4xl mx-auto">
+      {/* Header & Search */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-black text-[#181D26] tracking-tight">Transactions</h2>
+            <p className="text-xs text-[#7F899F] mt-0.5">Filter, review, and search your spending records</p>
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={onOpenCsvImport}
@@ -96,18 +162,16 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               title="Import CSV bank statement"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Import CSV</span>
+              <span>Import</span>
             </button>
-
             <button
               onClick={handleExportCsv}
               className="btn-secondary text-xs px-3.5 py-2"
-              title="Export filtered records to CSV"
+              title="Export CSV"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export</span>
             </button>
-
             <button
               onClick={onAddTransaction}
               className="btn-primary text-xs px-4 py-2"
@@ -118,202 +182,165 @@ export const TransactionList: React.FC<TransactionListProps> = ({
           </div>
         </div>
 
-        {/* Filter Pills Row */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/[0.05] text-xs">
-          <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-semibold uppercase tracking-wider mr-1">
-            <Filter className="w-3 h-3 text-slate-500" />
-            <span>Filters:</span>
-          </div>
+        {/* Search Input Bar (Reference 2) */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-[#7F899F] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search transactions, UPI, food, bills..."
+            className="input-field pl-9.5 text-xs rounded-full bg-[#FAF8F5]"
+          />
+        </div>
 
-          <select
-            value={selectedType}
-            onChange={e => setSelectedType(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[#06091A] border border-white/[0.08] text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
+        {/* Filter Pills (Reference 2: All, Expenses, Income, This Month) */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#EDE8E0] text-xs">
+          <button
+            onClick={() => setFilterTab('all')}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all ${
+              filterTab === 'all'
+                ? 'bg-[#181D26] text-white shadow-sm'
+                : 'bg-[#FAF8F5] text-[#5E687D] hover:text-[#181D26]'
+            }`}
           >
-            <option value="all">All Types</option>
-            <option value="expense">Expense (Spends)</option>
-            <option value="income">Income (Credits)</option>
-            <option value="transfer">Transfers</option>
-          </select>
+            All
+          </button>
+          <button
+            onClick={() => setFilterTab('expense')}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all ${
+              filterTab === 'expense'
+                ? 'bg-[#181D26] text-white shadow-sm'
+                : 'bg-[#FAF8F5] text-[#5E687D] hover:text-[#181D26]'
+            }`}
+          >
+            Expenses
+          </button>
+          <button
+            onClick={() => setFilterTab('income')}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all ${
+              filterTab === 'income'
+                ? 'bg-[#181D26] text-white shadow-sm'
+                : 'bg-[#FAF8F5] text-[#5E687D] hover:text-[#181D26]'
+            }`}
+          >
+            Income
+          </button>
+          <button
+            onClick={() => setFilterTab('this_month')}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all ${
+              filterTab === 'this_month'
+                ? 'bg-[#181D26] text-white shadow-sm'
+                : 'bg-[#FAF8F5] text-[#5E687D] hover:text-[#181D26]'
+            }`}
+          >
+            This Month
+          </button>
 
           <select
             value={selectedCategory}
             onChange={e => setSelectedCategory(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[#06091A] border border-white/[0.08] text-xs text-slate-300 focus:outline-none focus:border-emerald-500 max-w-[150px]"
+            className="ml-auto px-3 py-1.5 rounded-full bg-[#FAF8F5] border border-[#EDE8E0] text-xs text-[#3D4658] font-medium"
           >
             <option value="all">All Categories</option>
             {categories.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-
-          <select
-            value={selectedMethod}
-            onChange={e => setSelectedMethod(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg bg-[#06091A] border border-white/[0.08] text-xs text-slate-300 focus:outline-none focus:border-emerald-500"
-          >
-            <option value="all">All Payment Modes</option>
-            <option value="UPI">UPI</option>
-            <option value="Debit card">Debit Card</option>
-            <option value="Credit card">Credit Card</option>
-            <option value="Cash">Cash</option>
-            <option value="Net banking">Net Banking</option>
-          </select>
-
-          {(searchQuery || selectedCategory !== 'all' || selectedMethod !== 'all' || selectedType !== 'all') && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('all');
-                setSelectedMethod('all');
-                setSelectedType('all');
-              }}
-              className="text-[11px] text-emerald-400 hover:text-emerald-300 underline ml-auto"
-            >
-              Reset Filters
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Transaction List Cards */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-white/[0.05]">
-          <span className="section-title text-slate-400">
-            Transactions ({filtered.length})
-          </span>
-          <span className="text-[11px] text-slate-500">
-            Click any row to edit or view details
-          </span>
+      {/* Date-Grouped Transaction Cards (Reference 2) */}
+      {Object.keys(groups).length === 0 ? (
+        <div className="p-12 text-center rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-2">
+          <Receipt className="w-8 h-8 text-[#A4ADC0] mx-auto" />
+          <div className="font-bold text-sm text-[#181D26]">No transactions found</div>
+          <p className="text-xs text-[#7F899F]">Try clearing filters or tap Add to record a new transaction.</p>
         </div>
+      ) : (
+        Object.entries(groups).map(([groupLabel, txList]) => (
+          <div key={groupLabel} className="space-y-2">
+            <div className="text-xs font-bold text-[#7F899F] uppercase tracking-wider px-2">
+              {groupLabel}
+            </div>
 
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 space-y-2">
-            <Receipt className="w-8 h-8 mx-auto text-slate-600" />
-            <div className="text-sm font-semibold text-slate-200">No transactions found</div>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No records match your active search or filters. Try adjusting them or tap "Add" to record a new spend.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map(tx => {
-              const isIncome = tx.transaction_type === 'income';
-              const isTransfer = tx.transaction_type === 'transfer';
-              const categoryName = catMap.get(tx.category_id) || 'General';
-              const formattedDate = new Intl.DateTimeFormat('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }).format(new Date(tx.transaction_date));
+            <div className="rounded-2xl bg-white border border-[#EDE8E0] shadow-card divide-y divide-[#EDE8E0] overflow-hidden">
+              {txList.map(tx => {
+                const isIncome = tx.transaction_type === 'income';
+                const categoryName = catMap.get(tx.category_id) || 'General';
+                const timeStr = new Intl.DateTimeFormat('en-IN', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                }).format(new Date(tx.transaction_date));
 
-              return (
-                <div
-                  key={tx.id}
-                  onClick={() => onEditTransaction(tx)}
-                  className="p-3.5 sm:p-4 rounded-xl bg-[#06091A] border border-white/[0.06] hover:border-white/[0.14] transition-all cursor-pointer group flex items-center justify-between gap-3"
-                >
-                  {/* Left Icon & Description */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 ${
-                        isIncome
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : isTransfer
-                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                          : 'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}
-                    >
-                      {isIncome ? (
-                        <ArrowDownLeft className="w-4 h-4" />
-                      ) : isTransfer ? (
-                        <ArrowLeftRight className="w-4 h-4" />
-                      ) : (
-                        <ArrowUpRight className="w-4 h-4" />
-                      )}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white truncate">
+                return (
+                  <div
+                    key={tx.id}
+                    onClick={() => onEditTransaction(tx)}
+                    className="p-4 hover:bg-[#FAF8F5] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      {getMerchantAvatar(tx.merchant, isIncome)}
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-[#181D26] truncate">
                           {tx.merchant}
-                        </span>
-                        <span className="tag tag-slate text-[9px] hidden xs:inline">
-                          {categoryName}
-                        </span>
-                        {tx.is_unplanned && (
-                          <span className="tag tag-amber text-[9px]">
-                            Unplanned
-                          </span>
-                        )}
+                        </div>
+                        <div className="text-xs text-[#7F899F] mt-0.5 flex items-center gap-2">
+                          <span>{categoryName}</span>
+                          <span>•</span>
+                          <span className="font-mono-num">{timeStr}</span>
+                          {tx.payment_method && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono-num">{tx.payment_method}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <div
+                          className={`text-sm sm:text-base font-black font-mono-num ${
+                            isIncome ? 'text-[#2E8B57]' : 'text-[#181D26]'
+                          }`}
+                        >
+                          {isIncome ? '+' : '-'}{formatINR(tx.amount)}
+                        </div>
                       </div>
 
-                      <div className="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-2">
-                        <span>{formattedDate}</span>
-                        <span>•</span>
-                        <span className="font-mono-num">{tx.payment_method}</span>
-                        {tx.description && tx.description !== tx.merchant && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{tx.description}</span>
-                          </>
-                        )}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditTransaction(tx);
+                          }}
+                          className="btn-icon w-7 h-7"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-[#5E687D]" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(tx.id, tx.merchant);
+                          }}
+                          className="btn-icon w-7 h-7 text-[#E06D53]"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Right Amount & Actions */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-right">
-                      <div
-                        className={`text-base font-black font-mono-num ${
-                          isIncome
-                            ? 'text-emerald-400'
-                            : isTransfer
-                            ? 'text-blue-400'
-                            : 'text-slate-100'
-                        }`}
-                      >
-                        {isIncome ? '+' : '-'}{formatINR(tx.amount)}
-                      </div>
-                      {tx.is_credit_card_payment && (
-                        <div className="text-[10px] text-slate-500">CC Payment</div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditTransaction(tx);
-                        }}
-                        className="btn-icon w-8 h-8"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(tx.id, tx.merchant);
-                        }}
-                        className="btn-icon w-8 h-8 text-slate-500 hover:text-red-400 hover:border-red-500/30"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        )}
-      </div>
+        ))
+      )}
     </div>
   );
 };

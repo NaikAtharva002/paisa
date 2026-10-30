@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { store } from '../lib/storage';
-import { FinancialProfile, BudgetingMode, RealityTone } from '../types';
-import { formatINR, calculateDailyIncomeEquivalent } from '../lib/calculations';
+import { BudgetingMode, RealityTone } from '../types';
+import { formatINR } from '../lib/calculations';
 import {
   Settings as SettingsIcon,
-  User,
   Shield,
   Download,
   Trash2,
-  Bell,
-  Sparkles,
-  Sliders,
-  RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -76,263 +72,222 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-4xl mx-auto animate-in">
+      {/* Editorial Header */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-emerald-400" />
-            <span>Settings & Preferences</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Customize financial calculations, daily reality tones, and data controls
+          <h2 className="text-2xl font-black text-[#181D26] tracking-tight">Settings & Financial Calibration</h2>
+          <p className="text-xs text-[#7F899F] mt-0.5">
+            Configure income cycles, daily allowance formulas, notifications, and tone
           </p>
         </div>
 
         {savedSuccess && (
-          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl animate-in fade-in">
-            ✓ Settings Saved!
-          </span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF7EE] text-[#2E8B57] text-xs font-bold animate-in">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Saved!</span>
+          </div>
         )}
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
-        
-        {/* User Profile Card */}
-        <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
-          <div className="font-bold text-sm text-slate-200 flex items-center gap-2">
-            <User className="w-4 h-4 text-emerald-400" />
-            <span>Profile Details</span>
-          </div>
+      <form onSubmit={handleSave} className="space-y-5">
+        {/* Profile & Income Cycle */}
+        <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+          <div className="section-title text-[#7F899F]">Personal Profile & Salary Cycle</div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-400">Display Name</label>
+              <label className="section-title text-[#7F899F]">Display Name</label>
               <input
                 type="text"
+                required
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
-                className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+                className="input-field mt-1 text-xs"
               />
             </div>
+
             <div>
-              <label className="text-xs font-semibold text-slate-400">Currency & Timezone</label>
+              <label className="section-title text-[#7F899F]">Monthly Take-Home Income (₹)</label>
               <input
-                type="text"
-                value="INR (₹) • Asia/Kolkata (IST)"
-                disabled
-                className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950/50 border border-slate-800 text-xs text-slate-500"
+                type="number"
+                min="0"
+                required
+                value={monthlyIncome}
+                onChange={e => setMonthlyIncome(Number(e.target.value))}
+                className="input-field mt-1 text-xs font-mono-num font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Salary Credit Day of Month (1 - 31)</label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                required
+                value={salaryCreditDay}
+                onChange={e => setSalaryCreditDay(Number(e.target.value))}
+                className="input-field mt-1 text-xs font-mono-num"
+              />
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Monthly Savings Target (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={savingsTarget}
+                onChange={e => setSavingsTarget(Number(e.target.value))}
+                className="input-field mt-1 text-xs font-mono-num"
               />
             </div>
           </div>
         </div>
 
-        {/* Financial Rules Card */}
-        <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
-          <div className="font-bold text-sm text-slate-200 flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-emerald-400" />
-            <span>Daily Budget Calculation Engine</span>
-          </div>
+        {/* Budgeting Formula Choice */}
+        <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+          <div className="section-title text-[#7F899F]">Daily Allowance Calculation Mode</div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { id: 'income_equivalent' as BudgetingMode, label: 'Income Equivalent', desc: 'Income / calendar days' },
-              { id: 'spendable_income' as BudgetingMode, label: 'Spendable Income', desc: '(Income - bills - savings) / days' },
-              { id: 'custom_limit' as BudgetingMode, label: 'Custom Hard Cap', desc: 'User-specified fixed daily limit' },
-            ].map(m => (
-              <div
-                key={m.id}
-                onClick={() => setBudgetingMode(m.id)}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-colors ${
-                  budgetingMode === m.id
-                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-bold'
-                    : 'border-slate-800 bg-slate-950/60 text-slate-400'
-                }`}
-              >
-                <div className="text-xs">{m.label}</div>
-                <div className="text-[11px] text-slate-500 mt-1">{m.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-400">Monthly Take-Home Salary (₹)</label>
+            <label
+              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                budgetingMode === 'income_equivalent'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] shadow-sm'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+              }`}
+            >
               <input
-                type="number"
-                value={monthlyIncome}
-                onChange={e => setMonthlyIncome(Number(e.target.value))}
-                className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono-num font-bold"
+                type="radio"
+                name="budgetMode"
+                value="income_equivalent"
+                checked={budgetingMode === 'income_equivalent'}
+                onChange={() => setBudgetingMode('income_equivalent')}
+                className="sr-only"
               />
-            </div>
+              <div className="font-bold text-xs text-[#181D26]">Income Equivalent</div>
+              <p className="text-[11px] text-[#5E687D] mt-1 leading-snug">
+                Take-home income divided equally by days in the month.
+              </p>
+            </label>
 
+            <label
+              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                budgetingMode === 'spendable_income'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] shadow-sm'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+              }`}
+            >
+              <input
+                type="radio"
+                name="budgetMode"
+                value="spendable_income"
+                checked={budgetingMode === 'spendable_income'}
+                onChange={() => setBudgetingMode('spendable_income')}
+                className="sr-only"
+              />
+              <div className="font-bold text-xs text-[#181D26]">Spendable Income</div>
+              <p className="text-[11px] text-[#5E687D] mt-1 leading-snug">
+                Income minus savings and fixed commitments, divided by days.
+              </p>
+            </label>
+
+            <label
+              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                budgetingMode === 'custom_limit'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] shadow-sm'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+              }`}
+            >
+              <input
+                type="radio"
+                name="budgetMode"
+                value="custom_limit"
+                checked={budgetingMode === 'custom_limit'}
+                onChange={() => setBudgetingMode('custom_limit')}
+                className="sr-only"
+              />
+              <div className="font-bold text-xs text-[#181D26]">Custom Daily Limit</div>
+              <p className="text-[11px] text-[#5E687D] mt-1 leading-snug">
+                A hard daily allowance set manually by you.
+              </p>
+            </label>
+          </div>
+        </div>
+
+        {/* Reality Check Tone & Notification Preferences */}
+        <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+          <div className="section-title text-[#7F899F]">Tone & Notification Preferences</div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-400">Salary Credit Day</label>
+              <label className="section-title text-[#7F899F]">Evening Reality Check Tone</label>
               <select
-                value={salaryCreditDay}
-                onChange={e => setSalaryCreditDay(Number(e.target.value))}
-                className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+                value={tone}
+                onChange={e => setTone(e.target.value as RealityTone)}
+                className="input-field mt-1 text-xs"
               >
-                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-                  <option key={d} value={d}>{d}st of month</option>
-                ))}
+                <option value="friendly">😊 Friendly</option>
+                <option value="sarcastic">😏 Sarcastic & Witty</option>
+                <option value="straightforward">📊 Straightforward</option>
+                <option value="encouraging">🚀 Encouraging</option>
               </select>
             </div>
 
-            {budgetingMode === 'spendable_income' && (
-              <>
-                <div>
-                  <label className="text-xs font-semibold text-slate-400">Monthly Savings Target (₹)</label>
-                  <input
-                    type="number"
-                    value={savingsTarget}
-                    onChange={e => setSavingsTarget(Number(e.target.value))}
-                    className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono-num"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-slate-400">Fixed Commitments / Rent (₹)</label>
-                  <input
-                    type="number"
-                    value={fixedCommitments}
-                    onChange={e => setFixedCommitments(Number(e.target.value))}
-                    className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono-num"
-                  />
-                </div>
-              </>
-            )}
-
-            {budgetingMode === 'custom_limit' && (
-              <div>
-                <label className="text-xs font-semibold text-slate-400">Custom Daily Spending Cap (₹)</label>
-                <input
-                  type="number"
-                  value={dailyBudgetOverride}
-                  onChange={e => setDailyBudgetOverride(Number(e.target.value))}
-                  className="w-full mt-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-mono-num"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Notifications & Tone Card */}
-        <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl space-y-4">
-          <div className="font-bold text-sm text-slate-200 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-emerald-400" />
-            <span>Reality Check Tone & Alerts</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(['friendly', 'sarcastic', 'straightforward', 'encouraging'] as RealityTone[]).map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTone(t)}
-                className={`p-3 rounded-xl border text-xs capitalize text-center ${
-                  tone === t
-                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 font-bold'
-                    : 'border-slate-800 bg-slate-950 text-slate-400'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
-              <label className="text-xs font-semibold text-slate-400">Morning Allowance Reminder</label>
+              <label className="section-title text-[#7F899F]">Budget Pace Warning Threshold (%)</label>
               <input
-                type="time"
-                value={morningTime}
-                onChange={e => setMorningTime(e.target.value)}
-                className="w-full mt-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400">Nightly Reality Check Summary</label>
-              <input
-                type="time"
-                value={eveningTime}
-                onChange={e => setEveningTime(e.target.value)}
-                className="w-full mt-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+                type="number"
+                min="50"
+                max="100"
+                value={warningThreshold}
+                onChange={e => setWarningThreshold(Number(e.target.value))}
+                className="input-field mt-1 text-xs font-mono-num"
               />
             </div>
           </div>
-
-          <div>
-            <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
-              <span>Warning Alert Threshold</span>
-              <strong className="text-emerald-400 font-mono-num">{warningThreshold}% of daily budget</strong>
-            </div>
-            <input
-              type="range"
-              min={50}
-              max={100}
-              step={5}
-              value={warningThreshold}
-              onChange={e => setWarningThreshold(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
-            />
-          </div>
         </div>
 
-        {/* Save button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20"
-          >
-            Save All Preferences
+        {/* Submit Save Button */}
+        <div className="flex justify-end gap-3 pt-2">
+          <button type="submit" className="btn-primary text-xs px-6 py-2.5">
+            Save Settings & Preferences
           </button>
         </div>
-
       </form>
 
-      {/* Privacy, DPDP Act & Data Export Card */}
-      <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4">
-        <div className="font-bold text-sm text-slate-200 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-emerald-400" />
-          <span>Privacy & Data Sovereignty (DPDP Act India)</span>
-        </div>
+      {/* Data Backup & Danger Zone */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+        <div className="section-title text-[#7F899F]">Data Portability & Reset</div>
 
-        <p className="text-xs text-slate-400 leading-relaxed">
-          You own 100% of your financial data. Paisa stores your financial transactions locally with end-to-end user isolation. You can export a full copy of your data anytime or purge it permanently.
-        </p>
-
-        <div className="pt-2 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div>
+            <div className="text-xs font-bold text-[#181D26]">Export Full Financial Backup</div>
+            <p className="text-[11px] text-[#7F899F]">Download all transactions, categories, and account states as JSON</p>
+          </div>
           <button
             onClick={handleExportData}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+            className="btn-secondary text-xs px-4 py-2"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export Complete Data (JSON)</span>
+            <span>Export Backup</span>
           </button>
+        </div>
 
-          <button
-            onClick={() => {
-              if (confirm('Reset to initial sample data?')) {
-                store.resetToDemoData();
-                window.location.reload();
-              }
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Demo Data</span>
-          </button>
-
+        <div className="pt-4 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-[#E06D53]">Reset All Financial Data</div>
+            <p className="text-[11px] text-[#7F899F]">Permanently erase local records and restart onboarding</p>
+          </div>
           <button
             onClick={handleDeleteAllData}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-950/40 hover:bg-red-950/80 text-red-400 border border-red-500/30 text-xs font-semibold transition-colors ml-auto"
+            className="px-4 py-2 rounded-full bg-[#FDF1EE] text-[#E06D53] border border-[#FBDCD5] hover:bg-[#FBE4DF] text-xs font-bold transition-colors"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete All Records Permanently</span>
+            <Trash2 className="w-3.5 h-3.5 inline mr-1.5" />
+            <span>Reset Paisa</span>
           </button>
         </div>
       </div>
-
     </div>
   );
 };

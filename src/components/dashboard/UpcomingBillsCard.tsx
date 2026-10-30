@@ -1,61 +1,103 @@
 import React from 'react';
 import { RecurringPayment } from '../../types';
 import { formatINR } from '../../lib/calculations';
-import { Calendar, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface UpcomingBillsCardProps {
   recurringPayments: RecurringPayment[];
   onViewAll: () => void;
+  onPayBill?: (bill: RecurringPayment) => void;
 }
 
 export const UpcomingBillsCard: React.FC<UpcomingBillsCardProps> = ({
   recurringPayments,
   onViewAll,
+  onPayBill,
 }) => {
   const activeBills = recurringPayments.filter(r => r.is_active);
 
+  // Helper for brand colors & logos (Reference 2)
+  const getBrandLogo = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('jio')) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-[#0F288E] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          Jio
+        </div>
+      );
+    }
+    if (lower.includes('spotify')) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-[#1DB954] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          ♫
+        </div>
+      );
+    }
+    if (lower.includes('netflix')) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-black text-[#E50914] text-[13px] font-black flex items-center justify-center flex-shrink-0 shadow-sm border border-black/10">
+          N
+        </div>
+      );
+    }
+    if (lower.includes('google')) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-[#4285F4] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          1
+        </div>
+      );
+    }
+    return (
+      <div className="w-8 h-8 rounded-full bg-[#FAF8F5] border border-[#EDE8E0] text-[#D4952B] text-xs font-bold flex items-center justify-center flex-shrink-0">
+        {name.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   return (
-    <div className="p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card flex flex-col justify-between">
+    <div className="p-6 rounded-2xl bg-white border border-[#EDE8E0] shadow-card flex flex-col justify-between h-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-emerald-400" />
-          <span>Upcoming Bills & Subscriptions</span>
-        </h3>
+        <div>
+          <h3 className="text-sm sm:text-base font-bold text-[#181D26]">Upcoming Bills</h3>
+          <p className="text-xs text-[#7F899F] mt-0.5">Recurring commitments</p>
+        </div>
         <button
           onClick={onViewAll}
-          className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 group"
+          className="text-xs text-[#D4952B] hover:text-[#B87D1E] font-bold flex items-center gap-1 group transition-colors"
         >
-          <span>View all</span>
+          <span>See all</span>
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {activeBills.slice(0, 3).map(bill => {
           const dueDate = new Date(bill.next_due_date);
-          const formattedDue = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(dueDate);
+          const daysLeft = Math.max(1, Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
           return (
             <div
               key={bill.id}
-              className="p-3.5 rounded-xl bg-[#06091A] border border-white/[0.06] hover:border-white/[0.12] transition-colors flex items-center justify-between"
+              className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] hover:border-[#DFD7C7] transition-all flex items-center justify-between gap-3"
             >
-              <div>
-                <div className="text-xs font-bold text-slate-100">{bill.name}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
-                  <span className="text-amber-400/90 font-medium">Due {formattedDue}</span>
-                  <span>•</span>
-                  <span className="capitalize">{bill.frequency}</span>
+              <div className="flex items-center gap-3 min-w-0">
+                {getBrandLogo(bill.name)}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-[#181D26] truncate">{bill.name}</div>
+                  <div className="text-[11px] text-[#7F899F] mt-0.5 font-mono-num flex items-center gap-1.5">
+                    <span className="font-bold text-[#181D26]">{formatINR(bill.amount)}</span>
+                    <span>•</span>
+                    <span className="text-[#D4952B] font-semibold">Due in {daysLeft} days</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs font-bold text-slate-100 font-mono-num">
-                  {formatINR(bill.amount)}
-                </div>
-                <div className="text-[10px] text-slate-500 capitalize mt-0.5">
-                  {bill.auto_record ? 'Auto-tracked' : 'Manual reminder'}
-                </div>
-              </div>
+
+              <button
+                onClick={() => onPayBill?.(bill)}
+                className="px-3 py-1 rounded-full bg-white border border-[#EDE8E0] hover:border-[#D4952B] hover:text-[#D4952B] text-xs font-bold text-[#262D3B] transition-colors shadow-sm"
+              >
+                Pay
+              </button>
             </div>
           );
         })}

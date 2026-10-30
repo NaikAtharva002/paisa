@@ -8,66 +8,71 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#06091A',
-        surface: {
-          1: '#0D1426',
-          2: '#111827',
-          3: '#1A2340',
+        // Warm Cream / Sand Canvas (Reference 2)
+        cream: {
+          50: '#FCFBF9',
+          100: '#FAF8F5',
+          200: '#F5F2EB',
+          300: '#ECE6DA',
+          400: '#DFD7C7',
+          500: '#C9BEA8',
         },
-        brand: {
-          green: '#10B981',
-          'green-muted': '#059669',
-          amber: '#F59E0B',
-          red: '#EF4444',
-          blue: '#3B82F6',
-          teal: '#14B8A6',
+        // Deep Charcoal / Obsidian Sidebar & Elements (Reference 2)
+        sidebar: {
+          DEFAULT: '#141820',
+          dark: '#0E1117',
+          surface: '#1B212C',
+          hover: '#222936',
+          border: 'rgba(255, 255, 255, 0.08)',
         },
-        navy: {
-          950: '#06091A',
-          900: '#0D1426',
-          800: '#152144',
-          700: '#1C2E5E',
-          600: '#2A4384',
+        // Editorial Text / Ink Colors
+        ink: {
+          950: '#0F1218',
+          900: '#181D26',
+          800: '#262D3B',
+          700: '#3D4658',
+          600: '#5E687D',
+          500: '#7F899F',
+          400: '#A4ADC0',
+          300: '#CBD2E0',
         },
+        // Warm Fintech Accent Palette (Reference 2)
         paisa: {
-          green: '#10B981',
-          amber: '#F59E0B',
-          red: '#EF4444',
+          gold: '#D4952B',
+          goldLight: '#FFF6E6',
+          goldBorder: '#F0D49C',
+          sage: '#2E8B57',
+          sageLight: '#EBF7EE',
+          coral: '#E06D53',
+          coralLight: '#FDF1EE',
+          lavender: '#8B5CF6',
+          lavenderLight: '#F4EEFF',
           blue: '#3B82F6',
-          indigo: '#6366F1',
+          blueLight: '#EEF5FF',
+          amber: '#F59E0B',
+          amberLight: '#FEF8EA',
         },
-        muted: '#64748B',
-        subtle: '#334155',
+        card: {
+          bg: '#FFFFFF',
+          border: '#EDE8E0',
+          muted: '#F8F6F1',
+        }
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        editorial: ['Plus Jakarta Sans', 'serif'],
       },
       borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
         '4xl': '2rem',
-        '5xl': '2.5rem',
       },
       boxShadow: {
-        'glow-green': '0 0 20px -5px rgba(16, 185, 129, 0.4)',
-        'glow-amber': '0 0 20px -5px rgba(245, 158, 11, 0.4)',
-        'glow-red': '0 0 20px -5px rgba(239, 68, 68, 0.4)',
-        'card': '0 4px 24px rgba(0,0,0,0.4)',
-        'card-hover': '0 8px 32px rgba(0,0,0,0.5)',
-      },
-      animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(8px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
+        'card': '0 2px 14px rgba(24, 29, 38, 0.03), 0 1px 3px rgba(24, 29, 38, 0.02)',
+        'card-hover': '0 10px 28px rgba(24, 29, 38, 0.06), 0 2px 8px rgba(24, 29, 38, 0.03)',
+        'floating': '0 16px 40px rgba(18, 24, 34, 0.08)',
+        'gold-glow': '0 4px 18px rgba(212, 149, 43, 0.25)',
       },
     },
   },

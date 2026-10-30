@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { store } from '../lib/storage';
 import { RecurringPayment, Frequency } from '../types';
 import { formatINR } from '../lib/calculations';
-import { CalendarDays, Plus, Trash2, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { CalendarDays, Plus, Trash2, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Modal } from '../components/common/Modal';
 
 export const RecurringPage: React.FC = () => {
   const recurring = store.getRecurringPayments();
   const categories = store.getCategories();
   const profile = store.getProfile();
 
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'all'>('upcoming');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -79,179 +81,258 @@ export const RecurringPage: React.FC = () => {
     }
   };
 
+  // Helper for brand logos (Reference 2)
+  const getBrandLogo = (itemName: string) => {
+    const lower = itemName.toLowerCase();
+    if (lower.includes('jio')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#0F288E] text-white text-xs font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          Jio
+        </div>
+      );
+    }
+    if (lower.includes('spotify')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#1DB954] text-white text-sm font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          ♫
+        </div>
+      );
+    }
+    if (lower.includes('netflix')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-black text-[#E50914] text-sm font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          N
+        </div>
+      );
+    }
+    if (lower.includes('google')) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-[#4285F4] text-white text-xs font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+          1
+        </div>
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full bg-[#FAF8F5] border border-[#EDE8E0] text-[#D4952B] font-bold text-xs flex items-center justify-center flex-shrink-0">
+        {itemName.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-5">
-      
-      {/* Header card with total commitment */}
-      <div className="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 animate-in max-w-4xl mx-auto">
+      {/* Editorial Header */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-emerald-400" />
-            <span>Recurring Bills & Subscriptions</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-md">
-            Fixed monthly drain on your salary before you even start spending daily cash.
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-black text-[#181D26] tracking-tight">Bills & Subscriptions</h2>
+            <span className="tag tag-amber text-[10px]">
+              {formatINR(totalMonthlyCost)}/month
+            </span>
+          </div>
+          <p className="text-xs text-[#7F899F]">
+            Keep recurring OTT, utility, and subscription expenses predictable and organized
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-[11px] font-semibold text-slate-400 uppercase">Estimated Monthly Drain</div>
-            <div className="text-2xl font-extrabold text-white font-mono-num">
-              {formatINR(totalMonthlyCost)}
-            </div>
+        <div className="flex items-center gap-3">
+          {/* Upcoming / All Toggle (Reference 2) */}
+          <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-full border border-[#EDE8E0] text-xs font-semibold">
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className={`px-4 py-1.5 rounded-full transition-all ${
+                activeTab === 'upcoming' ? 'bg-[#181D26] text-white font-bold shadow-sm' : 'text-[#5E687D]'
+              }`}
+            >
+              Upcoming
+            </button>
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-1.5 rounded-full transition-all ${
+                activeTab === 'all' ? 'bg-[#181D26] text-white font-bold shadow-sm' : 'text-[#5E687D]'
+              }`}
+            >
+              All
+            </button>
           </div>
+
           <button
             onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20"
+            className="btn-primary text-xs px-4 py-2"
           >
-            <Plus className="w-4 h-4 stroke-[3]" />
+            <Plus className="w-3.5 h-3.5 stroke-[3]" />
             <span>Add Bill</span>
           </button>
         </div>
       </div>
 
-      {/* Safety notice as required by Section 3.I */}
-      <div className="p-3.5 rounded-2xl bg-slate-900/50 border border-slate-800 text-xs text-slate-400 flex items-start gap-2.5">
-        <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-        <span>
-          <strong>Paisa Safety Rule:</strong> Recurring reminders never auto-deduct funds from your bank account or create silent transactions without your explicit approval.
-        </span>
-      </div>
-
-      {/* List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {recurring.map(item => (
-          <div
-            key={item.id}
-            className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="font-bold text-sm text-slate-100">{item.name}</div>
-                <div className="text-xs text-slate-400 capitalize mt-0.5">
-                  {item.frequency} • Next due: <strong className="text-slate-300">{item.next_due_date}</strong>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-base font-bold text-slate-100 font-mono-num">
-                  {formatINR(item.amount)}
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 uppercase tracking-wider">
-                  {item.frequency}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-              <button
-                onClick={() => handleRecordNow(item)}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Record payment today</span>
-              </button>
-
-              <button
-                onClick={() => handleDelete(item.id, item.name)}
-                className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg"
-                title="Delete recurring payment"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+      {/* Bills Cards List (Reference 2) */}
+      <div className="rounded-3xl bg-white border border-[#EDE8E0] shadow-card divide-y divide-[#EDE8E0] overflow-hidden">
+        {recurring.length === 0 ? (
+          <div className="p-12 text-center text-[#7F899F] space-y-2">
+            <CalendarDays className="w-8 h-8 mx-auto text-[#A4ADC0]" />
+            <div className="text-sm font-bold text-[#181D26]">No recurring bills added yet</div>
+            <p className="text-xs">Add your Netflix, Jio, rent, or gym subscriptions to stay ahead of renewal dates.</p>
           </div>
-        ))}
-      </div>
+        ) : (
+          recurring.map(item => {
+            const dueDate = new Date(item.next_due_date);
+            const daysLeft = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-      {/* Add Modal */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <h4 className="text-sm font-bold text-slate-100 mb-3">Add Recurring Subscription / Bill</h4>
-            <form onSubmit={handleAdd} className="space-y-3">
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Netflix, Rent, Cult.fit, Broadband"
-                  required
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-400">Amount (INR)</label>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="649"
-                    required
-                    className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white font-mono-num"
-                  />
+            return (
+              <div
+                key={item.id}
+                className="p-5 hover:bg-[#FAF8F5] transition-colors flex items-center justify-between gap-4 group"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  {getBrandLogo(item.name)}
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-[#181D26] truncate">{item.name}</div>
+                    <div className="text-xs text-[#7F899F] mt-0.5 flex items-center gap-2">
+                      <span className="text-[#D4952B] font-semibold">
+                        Due {daysLeft > 0 ? `in ${daysLeft} days` : 'today'} ({new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(dueDate)})
+                      </span>
+                      <span>•</span>
+                      <span className="capitalize">{item.frequency}</span>
+                      {item.auto_record && (
+                        <>
+                          <span>•</span>
+                          <span className="text-[#2E8B57] font-medium">Auto-record</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-400">Frequency</label>
-                  <select
-                    value={frequency}
-                    onChange={e => setFrequency(e.target.value as Frequency)}
-                    className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white capitalize"
+
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="text-right">
+                    <div className="text-base font-black font-mono-num text-[#181D26]">
+                      {formatINR(item.amount)}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleRecordNow(item)}
+                    className="px-4 py-1.5 rounded-full bg-[#181D26] hover:bg-[#2A3140] text-white text-xs font-bold transition-all shadow-sm"
                   >
-                    <option value="monthly">Monthly</option>
-                    <option value="quarterly">Quarterly</option>
-                    <option value="yearly">Yearly</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
+                    Pay
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(item.id, item.name)}
+                    className="p-1.5 text-[#A4ADC0] hover:text-[#E06D53] rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete bill"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
+            );
+          })
+        )}
+      </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Next Due Date</label>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400">Category</label>
-                <select
-                  value={categoryId}
-                  onChange={e => setCategoryId(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white"
-                >
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddOpen(false)}
-                  className="px-3 py-1.5 text-xs text-slate-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs"
-                >
-                  Save Subscription
-                </button>
-              </div>
-            </form>
+      {/* Add Bill Modal */}
+      <Modal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+        title="Add Recurring Payment / Subscription"
+      >
+        <form onSubmit={handleAdd} className="space-y-4">
+          <div>
+            <label className="section-title text-[#7F899F]">Service / Subscription Name</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Jio Fiber, Spotify, Netflix, Rent, Cult.fit"
+              className="input-field mt-1 text-xs"
+            />
           </div>
-        </div>
-      )}
 
+          <div>
+            <label className="section-title text-[#7F899F]">Amount (INR ₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="e.g. 499"
+              className="input-field mt-1 text-xs font-mono-num font-bold"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="section-title text-[#7F899F]">Frequency</label>
+              <select
+                value={frequency}
+                onChange={e => setFrequency(e.target.value as Frequency)}
+                className="input-field mt-1 text-xs"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Next Due Date</label>
+              <input
+                type="date"
+                required
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="input-field mt-1 text-xs"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="section-title text-[#7F899F]">Category</label>
+            <select
+              value={categoryId}
+              onChange={e => setCategoryId(e.target.value)}
+              className="input-field mt-1 text-xs"
+            >
+              {categories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0]">
+            <label className="flex items-center gap-2.5 text-xs text-[#3D4658] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoRecord}
+                onChange={e => setAutoRecord(e.target.checked)}
+                className="rounded accent-[#D4952B] w-4 h-4 cursor-pointer"
+              />
+              <span>Automatically log completed spend on due date</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#EDE8E0]">
+            <button
+              type="button"
+              onClick={() => setIsAddOpen(false)}
+              className="btn-secondary text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary text-xs"
+            >
+              Save Subscription
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

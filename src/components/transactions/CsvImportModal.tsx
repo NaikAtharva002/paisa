@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { store } from '../../lib/storage';
 import { parseTransactionsCsv, ParsedCsvRow } from '../../lib/csvParser';
 import { formatINR } from '../../lib/calculations';
-import { Upload, AlertTriangle, CheckCircle, FileText, X } from 'lucide-react';
+import { Upload, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
 
 interface CsvImportModalProps {
   onSuccess: (count: number) => void;
@@ -76,28 +76,29 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
 2026-10-27,Uber Ride,280,UPI,UPI-987125`;
 
   return (
-    <div className="space-y-4">
-      
+    <div className="space-y-4 text-[#181D26]">
       {!parsedResult ? (
         <>
           {/* File drag/drop box */}
-          <div className="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-2xl p-6 text-center transition-colors">
-            <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-            <div className="text-xs font-semibold text-slate-200">
+          <div className="border-2 border-dashed border-[#DFD7C7] hover:border-[#D4952B] bg-[#FAF8F5] rounded-2xl p-6 text-center transition-colors">
+            <div className="w-10 h-10 rounded-xl bg-white border border-[#EDE8E0] flex items-center justify-center text-[#D4952B] mx-auto mb-2 shadow-sm">
+              <Upload className="w-5 h-5" />
+            </div>
+            <div className="text-xs font-bold text-[#181D26]">
               Upload bank statement or expense CSV
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[11px] text-[#7F899F] mt-1">
               Supports HDFC, ICICI, SBI, Cred, or standard CSV format
             </p>
             <input
               type="file"
               accept=".csv"
               onChange={handleFileUpload}
-              className="mt-3 block w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer"
+              className="mt-3 block w-full text-xs text-[#7F899F] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#181D26] file:text-white hover:file:bg-[#2A3140] cursor-pointer"
             />
           </div>
 
-          <div className="text-center text-xs text-slate-400 font-semibold">— OR PASTE CSV DIRECTLY —</div>
+          <div className="text-center text-[11px] tracking-wider text-[#7F899F] font-bold uppercase">— OR PASTE CSV DIRECTLY —</div>
 
           {/* Textarea paste option */}
           <div>
@@ -106,13 +107,13 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
               value={csvText}
               onChange={e => setCsvText(e.target.value)}
               placeholder={sampleCsvExample}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-mono text-[#181D26] placeholder-[#9AA4B2] focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
             />
             <div className="mt-2 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setCsvText(sampleCsvExample)}
-                className="text-[11px] text-emerald-400 hover:underline"
+                className="text-[11px] text-[#2E8B57] font-semibold hover:underline"
               >
                 Insert sample test CSV
               </button>
@@ -120,7 +121,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
                 type="button"
                 onClick={handleParseManual}
                 disabled={!csvText.trim()}
-                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-semibold text-slate-200 transition-colors"
+                className="btn-secondary text-xs disabled:opacity-40"
               >
                 Inspect & Validate Rows
               </button>
@@ -130,19 +131,18 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
       ) : (
         /* Preview Parsed Rows & Duplicate Report */
         <div className="space-y-3">
-          
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0]">
             <div>
-              <div className="text-xs font-bold text-slate-200">
+              <div className="text-xs font-bold text-[#181D26]">
                 Found {parsedResult.validRows.length} valid transactions
               </div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-[11px] text-[#7F899F] mt-0.5">
                 {parsedResult.duplicatesCount > 0 ? (
-                  <span className="text-amber-400 font-medium">
+                  <span className="text-[#D4952B] font-semibold">
                     ⚠️ {parsedResult.duplicatesCount} suspected duplicates detected
                   </span>
                 ) : (
-                  <span className="text-emerald-400 font-medium">
+                  <span className="text-[#2E8B57] font-semibold">
                     ✓ Clean dataset: zero duplicate conflicts found
                   </span>
                 )}
@@ -150,7 +150,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
             </div>
             <button
               onClick={() => setParsedResult(null)}
-              className="text-xs text-slate-400 hover:text-white underline"
+              className="text-xs text-[#7F899F] hover:text-[#181D26] underline font-medium"
             >
               Upload different file
             </button>
@@ -163,25 +163,25 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
                 key={row.rowNumber}
                 className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
                   row.is_duplicate
-                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
-                    : 'border-slate-800 bg-slate-900/60 text-slate-300'
+                    ? 'border-[#EBD7AF] bg-[#FCF8EE] text-[#8C5D17]'
+                    : 'border-[#EDE8E0] bg-[#FAF8F5] text-[#181D26]'
                 }`}
               >
                 <div>
-                  <div className="font-semibold text-slate-100 flex items-center gap-1.5">
+                  <div className="font-semibold text-[#181D26] flex items-center gap-1.5">
                     <span>{row.merchant}</span>
                     {row.is_duplicate && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#FDECC8] text-[#8C5D17] border border-[#F3C465] font-bold">
                         Duplicate
                       </span>
                     )}
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px] text-[#7F899F] mt-0.5">
                     {row.date} • {row.payment_method}
                     {row.duplicate_reason && ` — ${row.duplicate_reason}`}
                   </div>
                 </div>
-                <div className="font-bold font-mono-num text-sm text-slate-100">
+                <div className="font-bold font-mono-num text-sm text-[#181D26]">
                   {formatINR(row.amount)}
                 </div>
               </div>
@@ -189,11 +189,11 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
           </div>
 
           {/* Action buttons */}
-          <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-end gap-2">
+          <div className="pt-3 border-t border-[#EDE8E0] flex flex-col sm:flex-row items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+              className="btn-secondary text-xs w-full sm:w-auto"
             >
               Cancel
             </button>
@@ -201,7 +201,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
               <button
                 type="button"
                 onClick={() => handleImport(false)}
-                className="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                className="btn-secondary text-xs w-full sm:w-auto"
               >
                 Import All (Include Duplicates)
               </button>
@@ -209,17 +209,15 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({ onSuccess, onClo
             <button
               type="button"
               onClick={() => handleImport(true)}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20"
+              className="btn-primary text-xs w-full sm:w-auto"
             >
               {parsedResult.duplicatesCount > 0
                 ? `Import ${parsedResult.validRows.length - parsedResult.duplicatesCount} Unique Items`
                 : `Import All ${parsedResult.validRows.length} Items`}
             </button>
           </div>
-
         </div>
       )}
-
     </div>
   );
 };

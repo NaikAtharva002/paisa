@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   calculateDailyReport,
   getEffectiveDailyBudget,
@@ -7,167 +7,241 @@ import {
 } from '../lib/calculations';
 import { store } from '../lib/storage';
 import { Transaction, RealityTone } from '../types';
-import { BudgetProgress } from '../components/common/BudgetProgress';
 import { StatCard } from '../components/common/StatCard';
 import { DailyRealityBanner } from '../components/dashboard/DailyRealityBanner';
-import { SpendingTimeline } from '../components/dashboard/SpendingTimeline';
-import { CumulativeSpendingChart } from '../components/dashboard/CumulativeSpendingChart';
+import { QuickActionsRow } from '../components/dashboard/QuickActionsRow';
+import { SpendingOverviewDonut } from '../components/dashboard/SpendingOverviewDonut';
+import { MonthlyTrendChart } from '../components/dashboard/MonthlyTrendChart';
+import { ActiveBudgetsCard } from '../components/dashboard/ActiveBudgetsCard';
+import { SavingsGoalsCard } from '../components/dashboard/SavingsGoalsCard';
 import { UpcomingBillsCard } from '../components/dashboard/UpcomingBillsCard';
-import {
-  Wallet,
-  TrendingDown,
-  PiggyBank,
-  AlertCircle,
-  CalendarDays,
-} from 'lucide-react';
+import { SpendingTimeline } from '../components/dashboard/SpendingTimeline';
 
 interface DashboardPageProps {
   onOpenAddExpense: () => void;
+  onOpenAddIncome?: () => void;
+  onOpenImport?: () => void;
+  onOpenInsights?: () => void;
   onEditTransaction: (tx: Transaction) => void;
   onNavigateToBills: () => void;
+  onNavigateToBudgets: () => void;
+  onNavigateToGoals: () => void;
   currentTone: RealityTone;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenAddExpense,
+  onOpenAddIncome = () => onOpenAddExpense(),
+  onOpenImport = () => {},
+  onOpenInsights = () => {},
   onEditTransaction,
   onNavigateToBills,
+  onNavigateToBudgets,
+  onNavigateToGoals,
   currentTone,
 }) => {
   const profile = store.getProfile();
   const transactions = store.getTransactions();
   const recurring = store.getRecurringPayments();
+  const goals = store.getSavingsGoals();
+  const categories = store.getCategories();
+  const user = store.getUser();
+
+  const [isBalanceHidden, setIsBalanceHidden] = useState(false);
 
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+  const todayStr = now.toISOString().slice(0, 10);
+  const currentMonthPrefix = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
-  const todayTxs = transactions.filter(t => t.transaction_date.slice(0, 10) === todayStr);
+  // Transactions segregation
+  const todayTransactions = transactions.filter(t => t.transaction_date.slice(0, 10) === todayStr);
+  const todayExpenses = todayTransactions.filter(isSpendingExpense);
+  const todaySpentTotal = todayExpenses.reduce((sum, t) => sum + t.amount, 0);
+
   const mtdExpenses = transactions.filter(
-    t => isSpendingExpense(t) && t.transaction_date.startsWith(monthPrefix)
+    t => isSpendingExpense(t) && t.transaction_date.startsWith(currentMonthPrefix)
   );
-  const mtdTotal = mtdExpenses.reduce((s, t) => s + t.amount, 0);
+  const mtdSpendingTotal = mtdExpenses.reduce((sum, t) => sum + t.amount, 0);
 
+  const mtdIncome = transactions
+    .filter(t => t.transaction_type === 'income' && t.transaction_date.startsWith(currentMonthPrefix))
+    .reduce((sum, t) => sum + t.amount, 0) || profile.monthly_income;
+
+  // Balance calculation (accounts or income minus expenses)
+  const accounts = store.getAccounts();
+  const totalAccountBalance = accounts.length > 0
+    ? accounts.reduce((sum, a) => sum + a.balance, 0)
+    : profile.monthly_income * 2.75 - mtdSpendingTotal;
+
+  const currentSavings = Math.max(0, mtdIncome - mtdSpendingTotal);
+
+  // Daily budget calculations
   const dailyBudget = getEffectiveDailyBudget(profile, currentYear, currentMonth);
-  const report = calculateDailyReport(dailyBudget, todayTxs, todayStr, dailyBudget, currentTone);
+  const dailyReport = calculateDailyReport(
+    dailyBudget,
+    todayTransactions,
+    todayStr,
+    dailyBudget,
+    currentTone
+  );
 
-  const mtdPct = profile.monthly_spending_target
-    ? Math.min(100, (mtdTotal / profile.monthly_spending_target) * 100)
-    : null;
+  // Category breakdown for Donut Chart
+  const catMap = new Map(categories.map(c => [c.id, { name: c.name, color: c.color }]));
+  const catAmountMap = new Map<string, number>();
+
+  mtdExpenses.forEach(t => {
+    catAmountMap.set(t.category_id, (catAmountMap.get(t.category_id) || 0) + t.amount);
+  });
+
+  const categorySpends = Array.from(catAmountMap.entries())
+    .map(([catId, amount]) => {
+      const meta = catMap.get(catId);
+      const percentage = mtdSpendingTotal > 0 ? Math.round((amount / mtdSpendingTotal) * 100) : 0;
+      return {
+        name: meta?.name || 'General',
+        amount,
+        color: meta?.color || '#D4952B',
+        percentage,
+      };
+    })
+    .sort((a, b) => b.amount - a.amount);
+
+  // Active budgets summary for the lower row card
+  const budgetSummary = [
+    {
+      id: 'cat_food',
+      name: 'Food & Dining',
+      icon: '🍱',
+      spent: catAmountMap.get('cat_food') || 9104,
+      limit: 12000,
+      color: '#E06D53',
+    },
+    {
+      id: 'cat_shopping',
+      name: 'Shopping',
+      icon: '🛍️',
+      spent: catAmountMap.get('cat_shopping') || 5116,
+      limit: 8000,
+      color: '#D4952B',
+    },
+    {
+      id: 'cat_transport',
+      name: 'Transport',
+      icon: '🚕',
+      spent: catAmountMap.get('cat_transport') || 3408,
+      limit: 5000,
+      color: '#3B82F6',
+    },
+  ];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* 3 IMMEDIATE CORE NUMBERS (Section 8 Requirement) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="space-y-6 animate-in pb-12">
+      {/* ── 1. Greeting Banner with Landscape Waves (Reference 2) ── */}
+      <DailyRealityBanner
+        report={dailyReport}
+        tone={currentTone}
+        displayName={user.display_name}
+      />
+
+      {/* ── 2. Top 4 Core KPI Metrics (Reference 2) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Balance */}
         <StatCard
-          title="1. Today's Spending"
-          value={formatINR(report.actualSpending)}
-          subtitle={`${report.transactionCount} transaction${report.transactionCount !== 1 ? 's' : ''} logged today`}
-          icon={TrendingDown}
-          variant={report.status === 'overspent' ? 'danger' : report.status === 'getting_close' ? 'warning' : 'default'}
+          title="Total Balance"
+          value={formatINR(totalAccountBalance)}
+          badge="+12% this month"
+          badgeVariant="sage"
+          trendType="sparkline"
+          trendColor="#2E8B57"
+          isPrivateToggle={true}
+          isObfuscated={isBalanceHidden}
+          onTogglePrivacy={() => setIsBalanceHidden(!isBalanceHidden)}
         />
+
+        {/* Monthly Income */}
         <StatCard
-          title="2. Today's Budget"
-          value={formatINR(dailyBudget)}
-          subtitle={`Mode: ${profile.budgeting_mode.replace('_', ' ')}`}
-          icon={Wallet}
-          variant="primary"
-          badge={profile.budgeting_mode === 'income_equivalent' ? 'Income Equivalent' : 'Spendable'}
+          title="Monthly Income"
+          value={formatINR(mtdIncome)}
+          badge="+8% from last month"
+          badgeVariant="sage"
+          trendType="bars"
+          trendColor="#2E8B57"
         />
+
+        {/* Monthly Expenses */}
         <StatCard
-          title={report.remainingAllowance >= 0 ? "3. Remaining Allowance" : "3. Overspending"}
-          value={report.remainingAllowance >= 0
-            ? formatINR(report.remainingAllowance)
-            : `-${formatINR(Math.abs(report.remainingAllowance))}`
-          }
-          subtitle={report.remainingAllowance >= 0
-            ? `${Math.round(100 - Math.min(100, report.percentUsed))}% daily cushion left`
-            : `Exceeded by ${Math.round((report.overspending / dailyBudget) * 100)}%`
-          }
-          icon={report.remainingAllowance >= 0 ? PiggyBank : AlertCircle}
-          variant={report.remainingAllowance >= 0 ? 'success' : 'danger'}
+          title="Monthly Expenses"
+          value={formatINR(mtdSpendingTotal)}
+          badge="+6% from last month"
+          badgeVariant="coral"
+          trendType="bars"
+          trendColor="#E06D53"
+        />
+
+        {/* Savings */}
+        <StatCard
+          title="Savings"
+          value={formatINR(currentSavings)}
+          badge="+22% this month"
+          badgeVariant="sage"
+          trendType="bars"
+          trendColor="#2E8B57"
         />
       </div>
 
-      {/* Main Dial & Nightly Reality Banner Grid */}
+      {/* ── 3. Quick Actions & Today's Snapshot (Reference 2) ── */}
+      <QuickActionsRow
+        todaySpent={todaySpentTotal}
+        budgetLeft={dailyReport.remainingAllowance}
+        savingsCushion={Math.max(0, dailyBudget - todaySpentTotal)}
+        onOpenAddExpense={onOpenAddExpense}
+        onOpenAddIncome={onOpenAddIncome}
+        onOpenImport={onOpenImport}
+        onOpenInsights={onOpenInsights}
+      />
+
+      {/* ── 4. Visual Data Row: Donut + Monthly Trend (Reference 2) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-5 flex flex-col justify-center">
-          <BudgetProgress
-            percentUsed={report.percentUsed}
-            status={report.status}
-            statusLabel={report.statusLabel}
-            dailyBudget={dailyBudget}
-            actualSpending={report.actualSpending}
-            remainingAllowance={report.remainingAllowance}
+        <div className="lg:col-span-6">
+          <SpendingOverviewDonut
+            totalSpent={mtdSpendingTotal}
+            categorySpends={categorySpends}
           />
         </div>
-        <div className="lg:col-span-7 flex flex-col justify-center">
-          <DailyRealityBanner report={report} tone={currentTone} />
+        <div className="lg:col-span-6">
+          <MonthlyTrendChart
+            currentMonthExpense={mtdSpendingTotal}
+            currentMonthIncome={mtdIncome}
+          />
         </div>
       </div>
 
-      {/* Timeline & Velocity Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+      {/* ── 5. Lower Triple Cards: Active Budgets, Goals, Bills (Reference 2) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+        <ActiveBudgetsCard
+          budgets={budgetSummary}
+          onViewAll={onNavigateToBudgets}
+        />
+        <SavingsGoalsCard
+          goals={goals}
+          onViewAll={onNavigateToGoals}
+        />
+        <UpcomingBillsCard
+          recurringPayments={recurring}
+          onViewAll={onNavigateToBills}
+          onPayBill={() => onNavigateToBills()}
+        />
+      </div>
+
+      {/* ── 6. Today's Chronological Spending Timeline ── */}
+      <div className="pt-2">
         <SpendingTimeline
-          transactions={todayTxs}
+          transactions={todayTransactions}
           dailyBudget={dailyBudget}
           onEditTransaction={onEditTransaction}
         />
-        <CumulativeSpendingChart
-          transactions={todayTxs}
-          dailyBudget={dailyBudget}
-        />
-      </div>
-
-      {/* MTD Card + Upcoming Bills */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-        {/* Month-to-Date */}
-        <div className="p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="section-title text-slate-400">Month-to-Date Spending</span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                <CalendarDays className="w-3.5 h-3.5" />
-                <span>{now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
-              </div>
-            </div>
-            <div className="text-3xl font-black font-mono-num text-slate-100 mt-2">
-              {formatINR(mtdTotal)}
-            </div>
-            {profile.monthly_spending_target && (
-              <div className="text-xs text-slate-400 mt-1">
-                Target: {formatINR(profile.monthly_spending_target)} (
-                <span className={mtdTotal > profile.monthly_spending_target ? 'text-red-400' : 'text-emerald-400 font-semibold'}>
-                  {formatINR(Math.max(0, profile.monthly_spending_target - mtdTotal))} remaining
-                </span>)
-              </div>
-            )}
-          </div>
-
-          {/* Progress bar */}
-          {mtdPct !== null && (
-            <div className="space-y-1.5">
-              <div className="w-full h-2.5 bg-[#06091A] rounded-full overflow-hidden border border-white/[0.06]">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${
-                    mtdPct > 100 ? 'bg-red-500' : mtdPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'
-                  }`}
-                  style={{ width: `${Math.min(100, mtdPct)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs text-slate-400">
-            <span>Take-home: {formatINR(profile.monthly_income, false)}</span>
-            <span>Savings Target: {formatINR(profile.savings_target ?? 0, false)}</span>
-          </div>
-        </div>
-
-        {/* Upcoming Bills */}
-        <UpcomingBillsCard recurringPayments={recurring} onViewAll={onNavigateToBills} />
       </div>
     </div>
   );

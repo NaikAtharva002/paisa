@@ -20,43 +20,43 @@ interface LandingPageProps {
 const FEATURE_CARDS = [
   {
     icon: Clock,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10 border-emerald-500/20',
+    color: 'text-[#2E8B57]',
+    bg: 'bg-[#F0F7F3] border-[#CDE5D7]',
     title: 'Live Spending Timeline',
-    desc: 'Every UPI spend immediately recalculates your leftover buffer, keeping you grounded in real time.',
+    desc: 'Every UPI spend immediately recalculates your daily leftover buffer, keeping you grounded in real time.',
   },
   {
     icon: Sparkles,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10 border-amber-500/20',
+    color: 'text-[#D4952B]',
+    bg: 'bg-[#FCF8EE] border-[#EBD7AF]',
     title: 'Nightly Reality Check',
     desc: 'A witty, honest summary of what your wallet survived today, with practical adjustments for tomorrow.',
   },
   {
     icon: Shield,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 border-blue-500/20',
-    title: 'Safe Indian Bank Integration',
+    color: 'text-[#3B82F6]',
+    bg: 'bg-[#EFF6FF] border-[#BFDBFE]',
+    title: 'Safe Indian Bank Sync',
     desc: "Direct consent-based sync using RBI's Account Aggregator ecosystem. Zero banking passwords stored.",
   },
   {
     icon: BarChart3,
-    color: 'text-violet-400',
-    bg: 'bg-indigo-500/10 border-indigo-500/20',
+    color: 'text-[#8B5CF6]',
+    bg: 'bg-[#F5F3FF] border-[#DDD6FE]',
     title: 'Monthly Cash Flow Reports',
     desc: 'Deep category and merchant breakdowns, days within vs over budget, and month-over-month shifts.',
   },
   {
     icon: Bell,
-    color: 'text-rose-400',
-    bg: 'bg-rose-500/10 border-rose-500/20',
+    color: 'text-[#E06D53]',
+    bg: 'bg-[#FDF2F0] border-[#F5C7BE]',
     title: 'Tone-Adjusted Notifications',
     desc: 'Morning allowance briefings, 80% pace warnings, and humorous or straightforward evening reports.',
   },
   {
     icon: Zap,
-    color: 'text-teal-400',
-    bg: 'bg-teal-500/10 border-teal-500/20',
+    color: 'text-[#0D9488]',
+    bg: 'bg-[#F0FDFA] border-[#CCFBF1]',
     title: 'Instant Categorization',
     desc: 'Intelligent pattern matching for Indian favorites: Swiggy, Blinkit, Zepto, Uber, IRCTC, and Netflix.',
   },
@@ -78,24 +78,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   const pctUsed = Number(((totalSpent / dailyBudget) * 100).toFixed(1));
 
   return (
-    <div className="min-h-screen bg-[#06091A] text-slate-100 flex flex-col justify-between selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#181D26] flex flex-col justify-between selection:bg-[#D4952B]/20 selection:text-[#8C5D17]">
       {/* Top Navbar */}
-      <nav className="w-full border-b border-white/[0.06] px-6 py-4 bg-[#06091A]/80 backdrop-blur-md sticky top-0 z-30">
+      <nav className="w-full border-b border-[#EDE8E0] px-6 py-4 bg-[#FAF8F5]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-emerald-500/20">
-              ₹
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#D4952B] to-[#E5AB4B] flex items-center justify-center text-white shadow-md shadow-[#D4952B]/20">
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
+              </svg>
             </div>
             <div>
-              <span className="font-black text-lg tracking-tight text-white">PAISA</span>
-              <span className="ml-2 text-xs text-slate-500 hidden sm:inline font-medium">Your Daily Money Reality Check</span>
+              <span className="font-black text-lg tracking-tight text-[#181D26]">PAISA</span>
+              <span className="ml-2 text-xs text-[#7F899F] hidden sm:inline font-semibold">
+                Daily Money Reality Check
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={onExploreDemo}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.05] transition-colors"
+              className="btn-secondary text-xs"
             >
               Live Demo
             </button>
@@ -109,29 +113,60 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="px-6 py-14 sm:py-20 max-w-5xl mx-auto text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Your salary has a story. Find out where it goes.</span>
+      {/* Hero Section with Dunes Backdrop */}
+      <section className="relative px-6 pt-14 pb-12 sm:pt-20 sm:pb-16 max-w-5xl mx-auto text-center space-y-6">
+        {/* Subtle Decorative Landscape Waves in Background */}
+        <div className="absolute inset-0 -top-8 flex items-center justify-center opacity-30 pointer-events-none -z-10 overflow-hidden">
+          <svg
+            className="w-full max-w-4xl h-auto"
+            viewBox="0 0 800 240"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M0 160 Q 200 80 400 130 T 800 110 L 800 240 L 0 240 Z"
+              fill="url(#hero-grad-1)"
+              opacity="0.4"
+            />
+            <path
+              d="M0 185 Q 260 120 520 160 T 800 145 L 800 240 L 0 240 Z"
+              fill="url(#hero-grad-2)"
+              opacity="0.3"
+            />
+            <defs>
+              <linearGradient id="hero-grad-1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#87A99E" />
+                <stop offset="100%" stopColor="#DFD7C7" />
+              </linearGradient>
+              <linearGradient id="hero-grad-2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#D4952B" />
+                <stop offset="100%" stopColor="#E06D53" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FCF8EE] border border-[#EBD7AF] text-[#8C5D17] text-xs font-bold shadow-xs">
+          <Sparkles className="w-3.5 h-3.5 text-[#D4952B]" />
+          <span>Small steps today, bigger freedom tomorrow.</span>
+        </div>
+
+        <h1 className="text-4xl sm:text-6xl font-black text-[#181D26] tracking-tight leading-tight">
           Your Daily Money <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">
+          <span className="text-[#D4952B]">
             Reality Check
           </span>
         </h1>
 
-        <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-[#3D4658] max-w-2xl mx-auto leading-relaxed font-normal">
           "Sometimes you don't need a higher salary. <br />
-          <span className="text-slate-100 font-semibold">You need to understand where your current salary is going.</span>"
+          <span className="text-[#181D26] font-semibold">You need to understand where your current salary is going.</span>"
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
           <button
             onClick={onGetStarted}
-            className="btn-primary px-8 py-3.5 text-sm"
+            className="btn-primary px-8 py-3.5 text-sm shadow-md"
           >
             <span>Start Your Daily Reality Check</span>
             <ArrowRight className="w-4 h-4 stroke-[3]" />
@@ -146,30 +181,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
         </div>
 
         {/* Trust Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-3 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4 text-xs text-[#7F899F]">
           {['100% Free & Open', 'Zero Bank Passwords Stored', 'RBI Account Aggregator Ready', 'DPDP Act Compliant'].map(b => (
-            <span key={b} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span key={b} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#EDE8E0] shadow-xs font-medium text-[#3D4658]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#2E8B57]" />
               <span>{b}</span>
             </span>
           ))}
         </div>
       </section>
 
-      {/* Interactive Live Formula Calculator from Section 1 */}
+      {/* Interactive Live Formula Calculator */}
       <section className="px-6 py-8 max-w-4xl mx-auto w-full">
-        <div className="card p-6 sm:p-8 space-y-6">
+        <div className="editorial-card p-6 sm:p-8 space-y-6">
           <div className="text-center space-y-1">
-            <h3 className="text-lg font-bold text-white">Experience the Paisa Formula Live</h3>
-            <p className="text-xs text-slate-400">
-              Drag or adjust to see how your daily allowance transforms everyday UPI spending:
+            <h3 className="text-lg font-bold text-[#181D26]">Experience the Paisa Formula Live</h3>
+            <p className="text-xs text-[#7F899F]">
+              Adjust the slider to see how your daily allowance transforms everyday UPI spending:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
             <div>
-              <label className="section-title text-slate-400">Monthly Take-Home</label>
-              <div className="text-2xl font-black text-white font-mono-num mt-1">
+              <label className="section-title text-[#7F899F]">Monthly Take-Home</label>
+              <div className="text-3xl font-black text-[#181D26] font-mono-num mt-1">
                 {formatINR(demoMonthly, false)}
               </div>
               <input
@@ -179,50 +214,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
                 step={5000}
                 value={demoMonthly}
                 onChange={e => setDemoMonthly(Number(e.target.value))}
-                className="w-full mt-3 accent-emerald-500 cursor-pointer"
+                className="w-full mt-3 accent-[#D4952B] cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+              <div className="flex justify-between text-[11px] text-[#7F899F] font-semibold mt-1">
                 <span>₹30,000</span>
                 <span>₹3,00,000</span>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center sm:text-right">
-              <label className="section-title text-slate-400">Daily Income Equivalent</label>
-              <div className="text-2xl font-black text-emerald-400 font-mono-num mt-1">
+            <div className="p-5 rounded-2xl bg-[#F0F7F3] border border-[#CDE5D7] text-center sm:text-right">
+              <label className="section-title text-[#1E5C39]">Daily Income Equivalent</label>
+              <div className="text-3xl font-black text-[#2E8B57] font-mono-num mt-1">
                 {formatINR(dailyBudget)}/day
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Divided by 30 days in month</p>
+              <p className="text-[11px] text-[#2E8B57] mt-1 font-medium">Divided across calendar days</p>
             </div>
           </div>
 
           {/* Spend Items Preview */}
-          <div className="p-4 rounded-2xl bg-[#06091A] border border-white/[0.06] space-y-3">
-            <div className="section-title text-slate-400">Typical Indian Daily Purchases:</div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="p-5 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] space-y-3">
+            <div className="section-title text-[#7F899F]">Typical Indian Daily Purchases:</div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
               {DEMO_EXPENSES.map((exp, i) => (
-                <div key={i} className="p-2.5 rounded-xl bg-[#0D1426] border border-white/[0.06] text-center">
-                  <div className="text-xs text-slate-400">{exp.name}</div>
-                  <div className="text-sm font-bold font-mono-num text-slate-200 mt-0.5">₹{exp.amount}</div>
+                <div key={i} className="p-3 rounded-xl bg-white border border-[#EDE8E0] text-center shadow-xs">
+                  <div className="text-xs text-[#7F899F] font-medium">{exp.name}</div>
+                  <div className="text-sm font-bold font-mono-num text-[#181D26] mt-0.5">₹{exp.amount}</div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="pt-3 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3 text-xs">
               <div>
-                <span className="text-slate-400">Total Spent Today: </span>
-                <strong className="text-slate-100 font-mono-num font-bold">{formatINR(totalSpent)}</strong>
+                <span className="text-[#7F899F]">Total Spent Today: </span>
+                <strong className="text-[#181D26] font-mono-num font-bold">{formatINR(totalSpent)}</strong>
               </div>
               <div>
-                <span className="text-slate-400">Remaining Allowance: </span>
-                <strong className={`font-mono-num font-bold ${remaining >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <span className="text-[#7F899F]">Remaining Allowance: </span>
+                <strong className={`font-mono-num font-bold ${remaining >= 0 ? 'text-[#2E8B57]' : 'text-[#E06D53]'}`}>
                   {formatINR(remaining)}
                 </strong>
               </div>
               <div>
-                <span className="text-slate-400">Budget Used: </span>
-                <strong className="text-slate-100 font-mono-num font-bold">{pctUsed}%</strong>
-                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-[#7F899F]">Budget Used: </span>
+                <strong className="text-[#181D26] font-mono-num font-bold">{pctUsed}%</strong>
+                <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F0F7F3] text-[#2E8B57] border border-[#CDE5D7]">
                   Within budget
                 </span>
               </div>
@@ -234,19 +269,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
       {/* Feature Grid */}
       <section className="px-6 py-12 max-w-5xl mx-auto w-full">
         <div className="text-center mb-8">
-          <h2 className="text-2xl sm:text-3xl font-black text-white">Full Financial Toolkit</h2>
-          <p className="text-xs text-slate-400 mt-1">Engineered for Indian salary cycles and UPI habits</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#181D26]">Full Financial Toolkit</h2>
+          <p className="text-xs text-[#7F899F] font-medium mt-1">Engineered for Indian salary cycles and UPI habits</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {FEATURE_CARDS.map((f, i) => {
             const Icon = f.icon;
             return (
-              <div key={i} className={`p-5 rounded-2xl border ${f.bg} space-y-2.5 hover:scale-[1.02] transition-transform duration-200`}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/[0.05]">
+              <div key={i} className={`p-5 rounded-2xl border ${f.bg} space-y-2.5 hover:shadow-md transition-all duration-200`}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-xs">
                   <Icon className={`w-5 h-5 ${f.color}`} />
                 </div>
-                <h3 className="font-bold text-sm text-white">{f.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                <h3 className="font-bold text-sm text-[#181D26]">{f.title}</h3>
+                <p className="text-xs text-[#3D4658] leading-relaxed font-normal">{f.desc}</p>
               </div>
             );
           })}
@@ -254,13 +289,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/[0.06] px-6 py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-[#EDE8E0] px-6 py-6 text-center text-xs text-[#7F899F] bg-white">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>PAISA — Personal Finance Management for India. Built with original code.</div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-emerald-400" /> DPDP Act Compliant</span>
+          <div>PAISA — Personal Finance Management for India. Designed with care.</div>
+          <div className="flex items-center gap-4 text-[#7F899F]">
+            <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5 text-[#2E8B57]" /> DPDP Act Compliant</span>
             <span>•</span>
-            <span className="flex items-center gap-1"><Landmark className="w-3 h-3 text-blue-400" /> RBI AA Architecture</span>
+            <span className="flex items-center gap-1"><Landmark className="w-3.5 h-3.5 text-[#3B82F6]" /> RBI AA Architecture</span>
           </div>
         </div>
       </footer>
