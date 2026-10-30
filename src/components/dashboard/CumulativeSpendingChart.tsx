@@ -6,7 +6,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
 } from 'recharts';
 import { Transaction } from '../../types';
 import { formatINR, isSpendingExpense } from '../../lib/calculations';
@@ -25,7 +24,7 @@ export const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = (
     .filter(isSpendingExpense)
     .sort((a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime());
 
-  // Build cumulative chart points starting from morning 8:00 AM (0 spend)
+  // Build cumulative chart points starting from morning 08:00
   let cumulative = 0;
   const data = [
     { time: '08:00', spent: 0, merchant: 'Start of Day' },
@@ -45,7 +44,7 @@ export const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = (
   const maxSpend = Math.max(dailyBudget * 1.25, cumulative * 1.15, 1000);
 
   return (
-    <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800/80 shadow-xl backdrop-blur-sm">
+    <div className="p-6 rounded-2xl bg-[#0D1426] border border-white/[0.08] shadow-card">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2">
@@ -87,13 +86,13 @@ export const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = (
                 if (active && payload && payload.length) {
                   const pt = payload[0].payload;
                   return (
-                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-700 shadow-xl text-xs space-y-1">
+                    <div className="p-3 rounded-xl bg-[#06091A] border border-white/[0.14] shadow-2xl text-xs space-y-1">
                       <div className="font-bold text-slate-200">{pt.time} — {pt.merchant}</div>
                       <div className="text-emerald-400 font-mono-num font-bold">
-                        Total Spent: {formatINR(pt.spent)}
+                        Cumulative: {formatINR(pt.spent)}
                       </div>
                       {pt.singleAmount && (
-                        <div className="text-slate-400 text-[11px]">
+                        <div className="text-slate-400 text-[11px] font-mono-num">
                           Txn: {formatINR(pt.singleAmount)}
                         </div>
                       )}
@@ -103,22 +102,11 @@ export const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = (
                 return null;
               }}
             />
-            <ReferenceLine
-              y={dailyBudget}
-              stroke="#F59E0B"
-              strokeDasharray="4 4"
-              label={{
-                value: `Limit: ${formatINR(dailyBudget, false)}`,
-                fill: '#F59E0B',
-                fontSize: 10,
-                position: 'insideTopRight',
-              }}
-            />
             <Area
               type="monotone"
               dataKey="spent"
               stroke={cumulative > dailyBudget ? '#EF4444' : '#10B981'}
-              strokeWidth={3}
+              strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#spendGradient)"
             />

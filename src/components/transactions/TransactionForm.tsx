@@ -10,6 +10,9 @@ interface TransactionFormProps {
   onCancel: () => void;
 }
 
+const QUICK_AMOUNTS = [50, 100, 250, 500, 1000, 2000];
+const POPULAR_MERCHANTS = ['Blinkit', 'Swiggy', 'Zepto', 'Zomato', 'Uber', 'Amazon', 'Chai Point'];
+
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   initialData,
   onSuccess,
@@ -46,6 +49,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       }
     }
   }, [merchant, description, initialData]);
+
+  const handleQuickAmount = (val: number) => {
+    const current = parseFloat(amount) || 0;
+    setAmount(String(current + val));
+  };
+
+  const handleSelectMerchant = (name: string) => {
+    setMerchant(name);
+    if (!description) setDescription(name);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,171 +119,204 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      
-      {/* Type Toggle */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800">
-        {(['expense', 'income', 'transfer'] as TransactionType[]).map(type => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => setTransactionType(type)}
-            className={`py-1.5 text-xs font-bold rounded-lg capitalize transition-colors ${
-              transactionType === type
-                ? type === 'income' 
-                  ? 'bg-emerald-500 text-slate-950'
-                  : type === 'expense'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-blue-500 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            {type}
-          </button>
-        ))}
+      {/* Transaction Type Selector */}
+      <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#06091A] border border-white/[0.08]">
+        <button
+          type="button"
+          onClick={() => setTransactionType('expense')}
+          className={`py-2 text-xs font-bold rounded-lg transition-all ${
+            transactionType === 'expense'
+              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Expense (Spends)
+        </button>
+        <button
+          type="button"
+          onClick={() => setTransactionType('income')}
+          className={`py-2 text-xs font-bold rounded-lg transition-all ${
+            transactionType === 'income'
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Income (Credit)
+        </button>
       </div>
 
-      {/* Amount (Big prominent input) */}
+      {/* Amount Input with Quick Preset Buttons */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-          Amount (INR)
-        </label>
-        <div className="relative">
-          <span className="absolute left-4 top-3 text-2xl font-bold text-slate-400">₹</span>
+        <label className="section-title text-slate-400">Amount (INR ₹)</label>
+        <div className="relative mt-1">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
+            ₹
+          </span>
           <input
             type="number"
-            step="any"
+            step="0.01"
+            min="0"
+            required
             value={amount}
             onChange={e => setAmount(e.target.value)}
             placeholder="0.00"
-            autoFocus
-            required
-            className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-2xl sm:text-3xl font-extrabold text-white font-mono-num placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+            className="input-field pl-9 text-xl font-bold font-mono-num"
+          />
+        </div>
+
+        {/* Quick Add Presets */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          {QUICK_AMOUNTS.map(val => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => handleQuickAmount(val)}
+              className="text-[11px] font-mono-num font-semibold px-2 py-0.5 rounded-lg bg-[#06091A] border border-white/[0.08] text-slate-300 hover:border-emerald-500/40 hover:text-emerald-400 transition-colors"
+            >
+              +₹{val}
+            </button>
+          ))}
+          {amount && (
+            <button
+              type="button"
+              onClick={() => setAmount('')}
+              className="text-[10px] text-slate-500 hover:text-slate-300 ml-auto"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Merchant / Payee with Popular Suggestions */}
+      <div>
+        <label className="section-title text-slate-400">Merchant / Payee</label>
+        <input
+          type="text"
+          required
+          value={merchant}
+          onChange={e => setMerchant(e.target.value)}
+          placeholder="e.g. Swiggy, Blinkit, Starbucks, Uber"
+          className="input-field mt-1"
+        />
+
+        {/* Popular Merchant Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          {POPULAR_MERCHANTS.map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => handleSelectMerchant(m)}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-[#06091A] border border-white/[0.06] text-slate-400 hover:text-slate-200 hover:border-white/[0.14] transition-colors"
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Category Selection with AI Auto-detect Badge */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label className="section-title text-slate-400">Expense Category</label>
+          {autoCatSuggestion && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
+              <Sparkles className="w-3 h-3" /> Auto-detected: {autoCatSuggestion}
+            </span>
+          )}
+        </div>
+        <select
+          value={categoryId}
+          onChange={e => setCategoryId(e.target.value)}
+          className="input-field bg-[#06091A]"
+        >
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.id} className="bg-slate-900 text-slate-200">
+              {cat.icon} {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Payment Method & Date/Time Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="section-title text-slate-400">Payment Mode</label>
+          <select
+            value={paymentMethod}
+            onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
+            className="input-field mt-1 bg-[#06091A]"
+          >
+            {paymentMethods.map(method => (
+              <option key={method} value={method} className="bg-slate-900 text-slate-200">
+                {method}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="section-title text-slate-400">Date & Time</label>
+          <input
+            type="datetime-local"
+            value={transactionDate}
+            onChange={e => setTransactionDate(e.target.value)}
+            className="input-field mt-1"
           />
         </div>
       </div>
 
-      {/* Merchant / Description */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Merchant / Description
-          </label>
-          {autoCatSuggestion && (
-            <span className="text-[11px] text-emerald-400 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Auto-matched "{autoCatSuggestion}"
-            </span>
-          )}
-        </div>
-        <input
-          type="text"
-          value={merchant}
-          onChange={e => setMerchant(e.target.value)}
-          placeholder="e.g. Swiggy, Blinkit, Uber, Starbucks, House Rent"
-          required
-          className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-        />
-      </div>
-
-      {/* Category & Payment Method Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Category
-          </label>
-          <select
-            value={categoryId}
-            onChange={e => setCategoryId(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500"
-          >
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Payment Method
-          </label>
-          <select
-            value={paymentMethod}
-            onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
-            className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500"
-          >
-            {paymentMethods.map(m => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Date & Time */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-          Date & Time
-        </label>
-        <input
-          type="datetime-local"
-          value={transactionDate.slice(0, 16)}
-          onChange={e => setTransactionDate(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
-        />
-      </div>
-
-      {/* Special Flags */}
-      <div className="pt-2 space-y-2 border-t border-slate-800">
-        
-        {/* Unplanned purchase checkbox */}
-        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+      {/* Flags: Unplanned & Credit Card Payment */}
+      <div className="p-3 rounded-xl bg-[#06091A] border border-white/[0.06] space-y-2">
+        <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
           <input
             type="checkbox"
             checked={isUnplanned}
             onChange={e => setIsUnplanned(e.target.checked)}
-            className="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 focus:ring-0"
+            className="rounded accent-emerald-500 w-4 h-4 cursor-pointer"
           />
-          <span>Mark as an <strong>unplanned / impulse purchase</strong></span>
+          <span>Mark as <strong>Unplanned / Impulse Purchase</strong></span>
         </label>
 
-        {/* Credit card settlement / transfer notice */}
-        <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+        <label className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer">
           <input
             type="checkbox"
             checked={isCreditCardPayment}
             onChange={e => setIsCreditCardPayment(e.target.checked)}
-            className="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 focus:ring-0"
+            className="rounded accent-emerald-500 w-4 h-4 cursor-pointer"
           />
-          <span>This is a <strong>Credit Card Bill Payment / Transfer</strong> (Exclude from daily spend)</span>
+          <span>Credit card bill payment (excluded from daily spending to prevent double count)</span>
         </label>
-
-        {isCreditCardPayment && (
-          <div className="text-[11px] text-amber-300/90 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20 flex items-start gap-1.5">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>Card bill payments are settlements; checking this prevents double-counting the original purchases already logged in your statement.</span>
-          </div>
-        )}
       </div>
 
-      {/* Actions */}
-      <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+      {/* Notes */}
+      <div>
+        <label className="section-title text-slate-400">Notes (Optional)</label>
+        <input
+          type="text"
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="e.g. Split with Rahul, Office lunch"
+          className="input-field mt-1"
+        />
+      </div>
+
+      {/* Modal Actions */}
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+          className="btn-secondary"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all"
+          className="btn-primary"
         >
           {initialData ? 'Update Transaction' : 'Save Expense'}
         </button>
       </div>
-
     </form>
   );
 };
