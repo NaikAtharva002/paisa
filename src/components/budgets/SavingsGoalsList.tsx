@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { SavingsGoal } from '../../types';
 import { store } from '../../lib/storage';
-import { formatINR } from '../../lib/calculations';
-import { Plus, CheckCircle2, Laptop, Palmtree, ShieldCheck, Sparkles } from 'lucide-react';
+import { formatINR, roundPaise, addMoney } from '../../lib/calculations';
+import { Plus, CheckCircle2, Laptop, Palmtree, ShieldCheck, Sparkles, Edit2, Trash2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Modal } from '../common/Modal';
 
@@ -10,24 +10,53 @@ export const SavingsGoalsList: React.FC = () => {
   const goals = store.getSavingsGoals();
   const [filterTab, setFilterTab] = useState<'active' | 'completed'>('active');
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [depositAmount, setDepositAmount] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // New goal form
-  const [newName, setNewName] = useState('');
-  const [newTarget, setNewTarget] = useState('');
-  const [newDate, setNewDate] = useState('2026-12-31');
+  // Goal form
+  const [goalName, setGoalName] = useState('');
+  const [goalTarget, setGoalTarget] = useState('');
+  const [goalCurrent, setGoalCurrent] = useState('0');
+  const [goalDate, setGoalDate] = useState('2026-12-31');
 
   const filteredGoals = goals.filter(g => {
     const isCompleted = g.current_amount >= g.target_amount;
     return filterTab === 'completed' ? isCompleted : !isCompleted;
   });
 
-  const handleDeposit = (goal: SavingsGoal) => {
-    const val = parseFloat(depositAmount);
-    if (isNaN(val) || val <= 0) return;
+  const handleOpenAdd = () => {
+    setEditingGoal(null);
+    setGoalName('');
+    setGoalTarget('');
+    setGoalCurrent('0');
+    setGoalDate('2026-12-31');
+    setIsAddModalOpen(true);
+  };
 
-    const newAmount = goal.current_amount + val;
+  const handleOpenEdit = (goal: SavingsGoal) => {
+    setEditingGoal(goal);
+    setGoalName(goal.name);
+    setGoalTarget(String(goal.target_amount));
+    setGoalCurrent(String(goal.current_amount));
+    setGoalDate(goal.target_date);
+    setIsAddModalOpen(true);
+  };
+
+  const handleDelete = (goal: SavingsGoal) => {
+    if (confirm(`Delete savings goal "${goal.name}"?`)) {
+      store.deleteSavingsGoal(goal.id);
+    }
+  };
+
+  const handleDeposit = (goal: SavingsGoal) => {
+    const val = roundPaise(parseFloat(depositAmount));
+    if (isNaN(val) || val <= 0) {
+      alert('Please enter a valid deposit amount greater than 0.');
+      return;
+    }
+
+    const newAmount = addMoney(goal.current_amount, val);
     store.updateSavingsGoal(goal.id, { current_amount: newAmount });
 
     if (newAmount >= goal.target_amount) {
@@ -44,26 +73,43 @@ export const SavingsGoalsList: React.FC = () => {
     setDepositAmount('');
   };
 
-  const handleCreateGoal = (e: React.FormEvent) => {
+  const handleSaveGoal = (e: React.FormEvent) => {
     e.preventDefault();
-    const target = parseFloat(newTarget);
-    if (!newName.trim() || isNaN(target) || target <= 0) return;
+    const target = roundPaise(parseFloat(goalTarget));
+    const current = roundPaise(parseFloat(goalCurrent) || 0);
+
+    if (!goalName.trim() || isNaN(target) || target <= 0) {
+      alert('Please enter a valid goal name and target amount greater than 0.');
+      return;
+    }
 
     const profile = store.getProfile();
-    store.addSavingsGoal({
-      id: `goal_${Date.now()}`,
-      user_id: profile.user_id,
-      name: newName.trim(),
-      target_amount: target,
-      current_amount: 0,
-      target_date: newDate,
-      icon: 'PiggyBank',
-      category: 'general',
-    });
+
+    if (editingGoal) {
+      store.updateSavingsGoal(editingGoal.id, {
+        name: goalName.trim(),
+        target_amount: target,
+        current_amount: current,
+        target_date: goalDate,
+      });
+    } else {
+      store.addSavingsGoal({
+        id: `goal_${Date.now()}`,
+        user_id: profile.user_id,
+        name: goalName.trim(),
+        target_amount: target,
+        current_amount: current,
+        target_date: goalDate,
+        icon: 'PiggyBank',
+        category: 'general',
+      });
+    }
 
     setIsAddModalOpen(false);
-    setNewName('');
-    setNewTarget('');
+    setEditingGoal(null);
+    setGoalName('');
+    setGoalTarget('');
+    setGoalCurrent('0');
   };
 
   const getGoalIcon = (name: string) => {
@@ -75,14 +121,14 @@ export const SavingsGoalsList: React.FC = () => {
         </div>
       );
     }
-    if (lower.includes('trip') || lower.includes('europe') || lower.includes('vacation')) {
+    if (lower.includes('trip') || lower.includes('europe') || lower.includes('vacation') || lower.includes('goa')) {
       return (
         <div className="w-10 h-10 rounded-xl bg-[#FEF8EA] text-[#D4952B] flex items-center justify-center flex-shrink-0">
           <Palmtree className="w-5 h-5" />
         </div>
       );
     }
-    if (lower.includes('emergency')) {
+    if (lower.includes('emergency') || lower.includes('cushion')) {
       return (
         <div className="w-10 h-10 rounded-xl bg-[#EBF7EE] text-[#2E8B57] flex items-center justify-center flex-shrink-0">
           <ShieldCheck className="w-5 h-5" />
@@ -127,7 +173,7 @@ export const SavingsGoalsList: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAdd}
             className="btn-primary text-xs px-4 py-2"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
@@ -139,18 +185,18 @@ export const SavingsGoalsList: React.FC = () => {
       {/* Goal Cards Grid (Reference 2) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredGoals.length === 0 ? (
-          <div className="col-span-2 p-12 text-center rounded-3xl bg-white border border-[#EDE8E0] text-slate-400">
+          <div className="col-span-2 p-12 text-center rounded-3xl bg-white border border-[#EDE8E0] text-slate-400 text-xs">
             No {filterTab} goals found. Tap "New Goal" to create your next financial milestone!
           </div>
         ) : (
           filteredGoals.map(goal => {
-            const pct = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
+            const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
             const isDone = goal.current_amount >= goal.target_amount;
 
             return (
               <div
                 key={goal.id}
-                className="p-5 rounded-2xl bg-white border border-[#EDE8E0] shadow-card hover:border-[#DFD7C7] transition-all flex flex-col justify-between space-y-4"
+                className="p-5 rounded-2xl bg-white border border-[#EDE8E0] shadow-card hover:border-[#DFD7C7] transition-all flex flex-col justify-between space-y-4 group"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -162,11 +208,27 @@ export const SavingsGoalsList: React.FC = () => {
                       </div>
                     </div>
 
-                    {isDone && (
-                      <span className="tag tag-green text-[10px]">
-                        <CheckCircle2 className="w-3 h-3" /> Reached
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isDone && (
+                        <span className="tag tag-green text-[10px]">
+                          <CheckCircle2 className="w-3 h-3" /> Reached
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleOpenEdit(goal)}
+                        className="p-1 text-[#7F899F] hover:text-[#181D26] transition-colors rounded-lg"
+                        title="Edit goal"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(goal)}
+                        className="p-1 text-[#A4ADC0] hover:text-[#E06D53] transition-colors rounded-lg opacity-0 group-hover:opacity-100"
+                        title="Delete goal"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 pt-1">
@@ -191,7 +253,7 @@ export const SavingsGoalsList: React.FC = () => {
 
                 <div className="pt-2 border-t border-[#EDE8E0] flex items-center justify-between">
                   <span className="text-[11px] text-[#7F899F]">
-                    {isDone ? 'Goal completed 🎉' : `${formatINR(goal.target_amount - goal.current_amount)} left to save`}
+                    {isDone ? 'Goal completed 🎉' : `${formatINR(Math.max(0, goal.target_amount - goal.current_amount))} left to save`}
                   </span>
                   <button
                     onClick={() => setSelectedGoal(goal)}
@@ -219,14 +281,15 @@ export const SavingsGoalsList: React.FC = () => {
               <input
                 type="number"
                 min="1"
+                step="0.01"
                 required
                 value={depositAmount}
                 onChange={e => setDepositAmount(e.target.value)}
                 placeholder="e.g. 5000"
-                className="input-field mt-1 text-lg font-bold font-mono-num"
+                className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-lg font-bold font-mono-num text-[#181D26] focus:bg-white focus:outline-none focus:border-[#181D26]"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#EDE8E0]">
               <button onClick={() => setSelectedGoal(null)} className="btn-secondary text-xs">
                 Cancel
               </button>
@@ -238,36 +301,51 @@ export const SavingsGoalsList: React.FC = () => {
         )}
       </Modal>
 
-      {/* Add New Goal Modal */}
+      {/* Add / Edit Goal Modal */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Create New Savings Goal"
+        title={editingGoal ? 'Edit Savings Goal' : 'Create New Savings Goal'}
       >
-        <form onSubmit={handleCreateGoal} className="space-y-4">
+        <form onSubmit={handleSaveGoal} className="space-y-4">
           <div>
             <label className="section-title text-[#7F899F]">Goal Name</label>
             <input
               type="text"
               required
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="e.g. New Laptop, Europe Trip, Emergency Fund"
-              className="input-field mt-1 text-xs"
+              value={goalName}
+              onChange={e => setGoalName(e.target.value)}
+              placeholder="e.g. Emergency Fund, New Laptop, Vacation"
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-semibold text-[#181D26] focus:bg-white focus:outline-none focus:border-[#181D26]"
             />
           </div>
 
-          <div>
-            <label className="section-title text-[#7F899F]">Target Amount (₹)</label>
-            <input
-              type="number"
-              min="100"
-              required
-              value={newTarget}
-              onChange={e => setNewTarget(e.target.value)}
-              placeholder="e.g. 80000"
-              className="input-field mt-1 text-xs font-mono-num"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="section-title text-[#7F899F]">Target Amount (INR ₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="1"
+                required
+                value={goalTarget}
+                onChange={e => setGoalTarget(e.target.value)}
+                placeholder="e.g. 50000"
+                className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-mono-num font-bold text-[#181D26] focus:bg-white focus:outline-none focus:border-[#181D26]"
+              />
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Current Amount Saved</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={goalCurrent}
+                onChange={e => setGoalCurrent(e.target.value)}
+                className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-mono-num font-bold text-[#181D26] focus:bg-white focus:outline-none focus:border-[#181D26]"
+              />
+            </div>
           </div>
 
           <div>
@@ -275,9 +353,9 @@ export const SavingsGoalsList: React.FC = () => {
             <input
               type="date"
               required
-              value={newDate}
-              onChange={e => setNewDate(e.target.value)}
-              className="input-field mt-1 text-xs"
+              value={goalDate}
+              onChange={e => setGoalDate(e.target.value)}
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-semibold text-[#181D26] focus:bg-white focus:outline-none focus:border-[#181D26]"
             />
           </div>
 
@@ -293,7 +371,7 @@ export const SavingsGoalsList: React.FC = () => {
               type="submit"
               className="btn-primary text-xs"
             >
-              Save Goal
+              {editingGoal ? 'Update Goal' : 'Create Goal'}
             </button>
           </div>
         </form>

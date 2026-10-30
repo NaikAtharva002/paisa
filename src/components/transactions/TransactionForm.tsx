@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, PaymentMethod, TransactionType } from '../../types';
 import { store } from '../../lib/storage';
 import { suggestCategory } from '../../lib/categorization';
+import { roundPaise } from '../../lib/calculations';
 import { Sparkles } from 'lucide-react';
 
 interface TransactionFormProps {
@@ -62,7 +63,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(amount);
+    const numAmount = roundPaise(parseFloat(amount));
     if (isNaN(numAmount) || numAmount <= 0) {
       alert('Please enter a valid amount greater than 0.');
       return;

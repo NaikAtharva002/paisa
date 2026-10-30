@@ -73,7 +73,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const accounts = store.getAccounts();
   const totalAccountBalance = accounts.length > 0
     ? accounts.reduce((sum, a) => sum + a.balance, 0)
-    : profile.monthly_income * 2.75 - mtdSpendingTotal;
+    : mtdIncome - mtdSpendingTotal;
 
   const currentSavings = Math.max(0, mtdIncome - mtdSpendingTotal);
 
@@ -109,29 +109,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     .sort((a, b) => b.amount - a.amount);
 
   // Active budgets summary for the lower row card
+  const categoryBudgets = store.getCategoryBudgets();
   const budgetSummary = [
     {
       id: 'cat_food',
       name: 'Food & Dining',
       icon: '🍱',
-      spent: catAmountMap.get('cat_food') || 9104,
-      limit: 12000,
+      spent: catAmountMap.get('cat_food') || 0,
+      limit: categoryBudgets.cat_food || 12000,
       color: '#E06D53',
     },
     {
       id: 'cat_shopping',
       name: 'Shopping',
       icon: '🛍️',
-      spent: catAmountMap.get('cat_shopping') || 5116,
-      limit: 8000,
+      spent: catAmountMap.get('cat_shopping') || 0,
+      limit: categoryBudgets.cat_shopping || 8000,
       color: '#D4952B',
     },
     {
       id: 'cat_transport',
       name: 'Transport',
       icon: '🚕',
-      spent: catAmountMap.get('cat_transport') || 3408,
-      limit: 5000,
+      spent: catAmountMap.get('cat_transport') || 0,
+      limit: categoryBudgets.cat_transport || 5000,
       color: '#3B82F6',
     },
   ];

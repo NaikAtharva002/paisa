@@ -7,7 +7,8 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { formatINR } from '../../lib/calculations';
+import { formatINR, calculateMonthlyTrends } from '../../lib/calculations';
+import { store } from '../../lib/storage';
 
 interface MonthlyTrendChartProps {
   currentMonthExpense: number;
@@ -18,24 +19,16 @@ export const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
   currentMonthExpense,
   currentMonthIncome,
 }) => {
-  // Generate realistic historical benchmark data leading up to the current month
-  const data = [
-    { month: 'Jan', income: 42000, expense: 24000 },
-    { month: 'Feb', income: 42000, expense: 26500 },
-    { month: 'Mar', income: 45000, expense: 31000 },
-    { month: 'Apr', income: 45000, expense: 27000 },
-    { month: 'May', income: 45000, expense: 29500 },
-    { month: 'Jun', income: 48000, expense: 32000 },
-    { month: 'Jul', income: 48000, expense: 28000 },
-    { month: 'Aug', income: 50000, expense: 34000 },
-    { month: 'Sep', income: 50000, expense: 30000 },
-    {
-      month: 'Oct',
-      income: currentMonthIncome || 45000,
-      expense: currentMonthExpense || 28450,
-      isCurrent: true,
-    },
-  ];
+  const transactions = store.getTransactions();
+  // Calculate dynamic 6-month historical trend from actual user records
+  const trends = calculateMonthlyTrends(transactions, new Date(), 6);
+
+  const data = trends.map(t => ({
+    month: t.label,
+    income: t.isCurrent ? currentMonthIncome : t.income,
+    expense: t.isCurrent ? currentMonthExpense : t.expense,
+    isCurrent: t.isCurrent,
+  }));
 
   return (
     <div className="p-6 rounded-2xl bg-white border border-[#EDE8E0] shadow-card flex flex-col justify-between h-full">
@@ -79,7 +72,7 @@ export const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
             <YAxis
               stroke="#A4ADC0"
               fontSize={10}
-              tickFormatter={v => `${v / 1000}k`}
+              tickFormatter={v => `${v >= 1000 ? Math.round(v / 1000) + 'k' : v}`}
               tickLine={false}
               axisLine={{ stroke: '#EDE8E0' }}
             />
@@ -101,8 +94,8 @@ export const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({
                 return null;
               }}
             />
-            <Bar dataKey="income" fill="#2E8B57" radius={[4, 4, 0, 0]} maxBarSize={12} />
-            <Bar dataKey="expense" fill="#E06D53" radius={[4, 4, 0, 0]} maxBarSize={12} />
+            <Bar dataKey="income" fill="#2E8B57" radius={[4, 4, 0, 0]} barSize={14} />
+            <Bar dataKey="expense" fill="#E06D53" radius={[4, 4, 0, 0]} barSize={14} />
           </BarChart>
         </ResponsiveContainer>
       </div>

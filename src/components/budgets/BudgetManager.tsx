@@ -23,17 +23,14 @@ export const BudgetManager: React.FC = () => {
     }
   });
 
-  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({
-    cat_food: 12000,
-    cat_groceries: 15000,
-    cat_shopping: 8000,
-    cat_transport: 5000,
-    cat_entertainment: 3500,
-    cat_bills: 6000,
-  });
+  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>(
+    store.getCategoryBudgets()
+  );
 
-  const totalBudgetLimit = Object.values(categoryBudgets).reduce((a, b) => a + b, 0) || 40000;
-  const overallPct = Math.min(100, Math.round((totalMonthSpend / totalBudgetLimit) * 100));
+  const baseBudgetLimit = Object.values(categoryBudgets).reduce((a, b) => a + b, 0) || 40000;
+  const totalBudgetLimit = period === 'yearly' ? baseBudgetLimit * 12 : baseBudgetLimit;
+  const currentSpend = period === 'yearly' ? totalMonthSpend * 12 : totalMonthSpend;
+  const overallPct = totalBudgetLimit > 0 ? Math.min(100, Math.round((currentSpend / totalBudgetLimit) * 100)) : 0;
 
   const [editingCat, setEditingCat] = useState<string | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
@@ -41,7 +38,8 @@ export const BudgetManager: React.FC = () => {
   const handleSaveBudget = (catId: string) => {
     const val = parseFloat(budgetInput);
     if (!isNaN(val) && val > 0) {
-      setCategoryBudgets(prev => ({ ...prev, [catId]: val }));
+      store.updateCategoryBudget(catId, val);
+      setCategoryBudgets(store.getCategoryBudgets());
     }
     setEditingCat(null);
     setBudgetInput('');

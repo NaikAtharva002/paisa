@@ -1,4 +1,4 @@
-import { FinancialProfile, Transaction, BudgetStatus, DailySpendingReport, RealityTone } from '../types';
+import { FinancialProfile, Transaction, BudgetStatus, DailySpendingReport, RealityTone, Frequency } from '../types';
 
 /**
  * Checks if a given year is a leap year.
@@ -19,10 +19,38 @@ export function getDaysInMonth(year: number, month: number): number {
 }
 
 /**
+ * Monetary precision helpers using integer paise (1 Rupee = 100 Paise).
+ * Eliminates JavaScript floating-point errors (e.g. 0.1 + 0.2 = 0.30000000000000004).
+ */
+export function toPaise(rupees: number): number {
+  return Math.round(rupees * 100);
+}
+
+export function fromPaise(paise: number): number {
+  return Number((paise / 100).toFixed(2));
+}
+
+export function roundPaise(amount: number): number {
+  return fromPaise(toPaise(amount));
+}
+
+export function addMoney(a: number, b: number): number {
+  return fromPaise(toPaise(a) + toPaise(b));
+}
+
+export function subtractMoney(a: number, b: number): number {
+  return fromPaise(toPaise(a) - toPaise(b));
+}
+
+export function multiplyMoney(amount: number, factor: number): number {
+  return fromPaise(Math.round(toPaise(amount) * factor));
+}
+
+/**
  * Formats a number in Indian Rupee format (e.g. ₹1,00,000.00 or ₹3,333.33).
  */
 export function formatINR(amount: number, includeDecimals = true): string {
-  const rounded = Math.round(amount * 100) / 100;
+  const rounded = roundPaise(amount);
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -35,13 +63,14 @@ export function formatINR(amount: number, includeDecimals = true): string {
  * Compact Indian number format (e.g. ₹1.5L, ₹25K).
  */
 export function formatINRCompact(amount: number): string {
-  if (Math.abs(amount) >= 10000000) {
+  const abs = Math.abs(amount);
+  if (abs >= 10000000) {
     return `₹${(amount / 10000000).toFixed(2)} Cr`;
   }
-  if (Math.abs(amount) >= 100000) {
+  if (abs >= 100000) {
     return `₹${(amount / 100000).toFixed(2)} L`;
   }
-  if (Math.abs(amount) >= 1000) {
+  if (abs >= 1000) {
     return `₹${(amount / 1000).toFixed(1)} K`;
   }
   return formatINR(amount, false);
@@ -76,7 +105,7 @@ export function getEffectiveDailyBudget(profile: FinancialProfile, year: number,
   switch (profile.budgeting_mode) {
     case 'custom_limit':
       return profile.daily_budget_override > 0 
-        ? profile.daily_budget_override 
+        ? roundPaise(profile.daily_budget_override)
         : calculateDailyIncomeEquivalent(profile.monthly_income, year, month);
     case 'spendable_income':
       return calculateDailySpendableBudget(profile, year, month);
@@ -101,31 +130,32 @@ export function isSpendingExpense(tx: Transaction): boolean {
 }
 
 /**
- * Calculates net spending for a list of transactions.
+ * Calculates net spending for a list of transactions using integer paise arithmetic.
  * Treats refunds as spending reductions.
  */
 export function calculateTotalSpending(transactions: Transaction[]): number {
-  let total = 0;
+  let totalPaise = 0;
   for (const tx of transactions) {
     if (isSpendingExpense(tx)) {
-      total += tx.amount;
+      totalPaise += toPaise(tx.amount);
     } else if (tx.transaction_type === 'refund') {
-      total -= tx.amount;
+      totalPaise -= toPaise(tx.amount);
     }
   }
-  return Number(Math.max(0, total).toFixed(2));
+  return fromPaise(Math.max(0, totalPaise));
 }
 
 /**
- * Calculates total income for a list of transactions.
+ * Calculates total income for a list of transactions using integer paise arithmetic.
  */
 export function calculateTotalIncome(transactions: Transaction[]): number {
-  return Number(
-    transactions
-      .filter(tx => tx.transaction_type === 'income')
-      .reduce((sum, tx) => sum + tx.amount, 0)
-      .toFixed(2)
-  );
+  let totalPaise = 0;
+  for (const tx of transactions) {
+    if (tx.transaction_type === 'income') {
+      totalPaise += toPaise(tx.amount);
+    }
+  }
+  return fromPaise(Math.max(0, totalPaise));
 }
 
 /**
@@ -165,9 +195,9 @@ export function calculateDailyReport(
   tone: RealityTone = 'friendly'
 ): DailySpendingReport {
   const actualSpending = calculateTotalSpending(todayTransactions);
-  const variance = Number((dailyBudget - actualSpending).toFixed(2));
-  const remainingAllowance = Number((dailyBudget - actualSpending).toFixed(2));
-  const overspending = Number(Math.max(0, actualSpending - dailyBudget).toFixed(2));
+  const variance = subtractMoney(dailyBudget, actualSpending);
+  const remainingAllowance = variance;
+  const overspending = fromPaise(Math.max(0, toPaise(actualSpending) - toPaise(dailyBudget)));
 
   const percentUsed = dailyBudget > 0 
     ? Number(((actualSpending / dailyBudget) * 100).toFixed(1))
@@ -182,18 +212,18 @@ export function calculateDailyReport(
 
   for (const tx of todayTransactions) {
     if (isSpendingExpense(tx)) {
-      const current = categoryMap.get(tx.category_id) || 0;
-      categoryMap.set(tx.category_id, current + tx.amount);
+      const curPaise = categoryMap.get(tx.category_id) || 0;
+      categoryMap.set(tx.category_id, curPaise + toPaise(tx.amount));
       if (tx.is_unplanned) unplannedCount++;
     }
   }
 
   let biggestCategory: string | undefined;
-  let biggestCategoryAmount = 0;
-  for (const [cat, amt] of categoryMap.entries()) {
-    if (amt > biggestCategoryAmount) {
+  let biggestCategoryPaise = 0;
+  for (const [cat, amtPaise] of categoryMap.entries()) {
+    if (amtPaise > biggestCategoryPaise) {
       biggestCategory = cat;
-      biggestCategoryAmount = amt;
+      biggestCategoryPaise = amtPaise;
     }
   }
 
@@ -213,7 +243,7 @@ export function calculateDailyReport(
 
   return {
     date: targetDateStr,
-    dailyBudget,
+    dailyBudget: roundPaise(dailyBudget),
     actualSpending,
     variance,
     remainingAllowance,
@@ -222,10 +252,10 @@ export function calculateDailyReport(
     status,
     statusLabel,
     biggestCategory,
-    biggestCategoryAmount,
+    biggestCategoryAmount: fromPaise(biggestCategoryPaise),
     transactionCount: todayTransactions.length,
     unplannedCount,
-    recentDailyAverage,
+    recentDailyAverage: roundPaise(recentDailyAverage),
     hasTransactions,
     message,
     actionSuggestion,
@@ -325,4 +355,87 @@ function generateRealityMessage(params: {
         actionSuggestion: `You saved ${formatINR(dailyBudget - actualSpending)} today that stays right in your pocket!`
       };
   }
+}
+
+/**
+ * Calculates monthly trends across consecutive months from actual transaction data.
+ */
+export interface MonthTrendData {
+  monthKey: string; // e.g. "2026-10"
+  label: string; // e.g. "Oct"
+  income: number;
+  expense: number;
+  isCurrent: boolean;
+}
+
+export function calculateMonthlyTrends(
+  transactions: Transaction[],
+  currentDate = new Date(),
+  monthsCount = 6
+): MonthTrendData[] {
+  const result: MonthTrendData[] = [];
+  const curYear = currentDate.getFullYear();
+  const curMonth = currentDate.getMonth();
+
+  for (let i = monthsCount - 1; i >= 0; i--) {
+    const d = new Date(curYear, curMonth - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const label = MONTH_LABELS[d.getMonth()];
+    const isCurrent = i === 0;
+
+    let monthIncomePaise = 0;
+    let monthExpensePaise = 0;
+
+    for (const tx of transactions) {
+      if (tx.transaction_date.startsWith(monthKey)) {
+        if (tx.transaction_type === 'income') {
+          monthIncomePaise += toPaise(tx.amount);
+        } else if (isSpendingExpense(tx)) {
+          monthExpensePaise += toPaise(tx.amount);
+        } else if (tx.transaction_type === 'refund') {
+          monthExpensePaise = Math.max(0, monthExpensePaise - toPaise(tx.amount));
+        }
+      }
+    }
+
+    result.push({
+      monthKey,
+      label,
+      income: fromPaise(monthIncomePaise),
+      expense: fromPaise(monthExpensePaise),
+      isCurrent,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Advances recurring payment due date to the next cycle based on frequency.
+ */
+export function advanceNextDueDate(currentDueDateStr: string, frequency: Frequency): string {
+  const d = new Date(currentDueDateStr);
+  if (isNaN(d.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  switch (frequency) {
+    case 'weekly':
+      d.setDate(d.getDate() + 7);
+      break;
+    case 'monthly':
+      d.setMonth(d.getMonth() + 1);
+      break;
+    case 'quarterly':
+      d.setMonth(d.getMonth() + 3);
+      break;
+    case 'yearly':
+      d.setFullYear(d.getFullYear() + 1);
+      break;
+  }
+
+  return d.toISOString().slice(0, 10);
 }

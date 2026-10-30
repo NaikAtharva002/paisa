@@ -431,6 +431,15 @@ const DEFAULT_CONSENTS: BankConsent[] = [
   },
 ];
 
+export const DEFAULT_CATEGORY_BUDGETS: Record<string, number> = {
+  cat_food: 12000,
+  cat_groceries: 15000,
+  cat_shopping: 8000,
+  cat_transport: 5000,
+  cat_entertainment: 3500,
+  cat_bills: 6000,
+};
+
 // ----------------------------------------------------------------------
 // Storage Helpers
 // ----------------------------------------------------------------------
@@ -476,6 +485,7 @@ export const store = {
     setStored(STORAGE_KEYS.SAVINGS, DEFAULT_SAVINGS_GOALS);
     setStored(STORAGE_KEYS.NOTIFICATIONS, DEFAULT_NOTIFICATIONS);
     setStored(STORAGE_KEYS.CONSENTS, DEFAULT_CONSENTS);
+    setStored(STORAGE_KEYS.BUDGETS, DEFAULT_CATEGORY_BUDGETS);
     notifyListeners();
   },
 
@@ -565,6 +575,21 @@ export const store = {
     const combined = [...toAdd, ...this.getTransactions()];
     setStored(STORAGE_KEYS.TRANSACTIONS, combined);
     return toAdd.length;
+  },
+
+  // Budgets
+  getCategoryBudgets(): Record<string, number> {
+    return getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, DEFAULT_CATEGORY_BUDGETS);
+  },
+
+  updateCategoryBudget(categoryId: string, limit: number): void {
+    const current = this.getCategoryBudgets();
+    const updated = { ...current, [categoryId]: Math.max(0, limit) };
+    setStored(STORAGE_KEYS.BUDGETS, updated);
+  },
+
+  setCategoryBudgets(budgets: Record<string, number>): void {
+    setStored(STORAGE_KEYS.BUDGETS, budgets);
   },
 
   // Categories
