@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { store } from '../lib/storage';
-import { Account, BankConsent } from '../types';
-import { formatINR } from '../lib/calculations';
+import { Account, BankConsent, AccountType } from '../types';
+import { formatINR, roundPaise } from '../lib/calculations';
 import {
   SUPPORTED_INDIAN_BANKS,
   simulateAaConsentFlow,
@@ -22,8 +22,12 @@ import {
   FileText,
   Clock,
   ExternalLink,
+  Edit2,
+  Trash2,
+  Coins,
 } from 'lucide-react';
 import { Modal } from '../components/common/Modal';
+import { showToast } from '../components/common/Toast';
 
 export const BankAccountsPage: React.FC = () => {
   const accounts = store.getAccounts();
@@ -36,7 +40,86 @@ export const BankAccountsPage: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
 
+  // Manual Add / Edit Account State
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [accName, setAccName] = useState('');
+  const [accType, setAccType] = useState<AccountType>('savings');
+  const [accBalance, setAccBalance] = useState('');
+  const [accProvider, setAccProvider] = useState('Custom Bank / Wallet');
+
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+
+  const handleOpenManualAdd = () => {
+    setEditingAccount(null);
+    setAccName('');
+    setAccType('savings');
+    setAccBalance('');
+    setAccProvider('Custom Bank / Wallet');
+    setIsManualModalOpen(true);
+  };
+
+  const handleOpenEdit = (acc: Account) => {
+    setEditingAccount(acc);
+    setAccName(acc.account_name);
+    setAccType(acc.account_type);
+    setAccBalance(String(acc.balance));
+    setAccProvider(acc.provider);
+    setIsManualModalOpen(true);
+  };
+
+  const handleSaveManualAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    const bal = roundPaise(parseFloat(accBalance) || 0);
+    if (!accName.trim()) {
+      alert('Please enter an account name');
+      return;
+    }
+
+    if (editingAccount) {
+      store.updateAccount(editingAccount.id, {
+        account_name: accName.trim(),
+        account_type: accType,
+        provider: accProvider.trim(),
+        balance: bal,
+      });
+      showToast({
+        type: 'success',
+        title: 'Account updated!',
+        message: `${accName.trim()} balance: ${formatINR(bal)}`,
+      });
+    } else {
+      store.addAccount({
+        id: `acc_${Date.now()}`,
+        user_id: profile.user_id,
+        account_name: accName.trim(),
+        account_type: accType,
+        provider: accProvider.trim(),
+        balance: bal,
+        connection_status: 'connected',
+        last_synced_at: new Date().toISOString(),
+        is_demo: false,
+      });
+      showToast({
+        type: 'success',
+        title: 'Account linked!',
+        message: `${accName.trim()} with balance ${formatINR(bal)}`,
+      });
+    }
+
+    setIsManualModalOpen(false);
+    setEditingAccount(null);
+  };
+
+  const handleDeleteAccount = (acc: Account) => {
+    if (confirm(`Remove account "${acc.account_name}"?`)) {
+      store.deleteAccount(acc.id);
+      showToast({
+        type: 'info',
+        title: `Removed ${acc.account_name}`,
+      });
+    }
+  };
 
   const handleToggleBank = (bankId: string) => {
     setSelectedBanks(prev =>
@@ -220,13 +303,22 @@ export const BankAccountsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsConsentModalOpen(true)}
-          className="btn-primary text-xs px-4 py-2"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>Connect Bank</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleOpenManualAdd}
+            className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Account</span>
+          </button>
+          <button
+            onClick={() => setIsConsentModalOpen(true)}
+            className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Connect Bank (AA)</span>
+          </button>
+        </div>
       </div>
 
       {/* Account Cards List */}
@@ -281,6 +373,22 @@ export const BankAccountsPage: React.FC = () => {
                     title="Fetch latest statement feeds"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSyncing === acc.id ? 'animate-spin text-[#D4952B]' : 'text-[#7F899F]'}`} />
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEdit(acc)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-[#181D26] hover:bg-slate-100 transition-colors"
+                    title="Edit account"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteAccount(acc)}
+                    className="p-1.5 rounded-xl text-slate-400 hover:text-[#E06D53] hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete account"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
 
                   {acc.connection_status === 'connected' && (
@@ -434,6 +542,87 @@ export const BankAccountsPage: React.FC = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Manual Add / Edit Account Modal */}
+      <Modal
+        isOpen={isManualModalOpen}
+        onClose={() => {
+          setIsManualModalOpen(false);
+          setEditingAccount(null);
+        }}
+        title={editingAccount ? `Edit ${editingAccount.account_name}` : 'Link Bank Account or Cash Wallet'}
+      >
+        <form onSubmit={handleSaveManualAccount} className="space-y-4">
+          <div>
+            <label className="section-title text-[#7F899F]">Account Name</label>
+            <input
+              type="text"
+              required
+              value={accName}
+              onChange={e => setAccName(e.target.value)}
+              placeholder="e.g. Salary HDFC, Paytm Wallet, Cash Reserve"
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="section-title text-[#7F899F]">Account Type</label>
+              <select
+                value={accType}
+                onChange={e => setAccType(e.target.value as any)}
+                className="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs text-[#181D26] outline-none"
+              >
+                <option value="savings">Savings Account</option>
+                <option value="current">Current Account</option>
+                <option value="wallet">Digital Wallet / UPI</option>
+                <option value="cash">Physical Cash</option>
+                <option value="credit_card">Credit Card</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Current Balance (INR ₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={accBalance}
+                onChange={e => setAccBalance(e.target.value)}
+                placeholder="0.00"
+                className="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] font-mono-num outline-none font-bold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="section-title text-[#7F899F]">Institution / Provider Name</label>
+            <input
+              type="text"
+              value={accProvider}
+              onChange={e => setAccProvider(e.target.value)}
+              placeholder="e.g. HDFC Bank, SBI, Paytm, Physical Wallet"
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs text-[#181D26] outline-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#EDE8E0]">
+            <button
+              type="button"
+              onClick={() => {
+                setIsManualModalOpen(false);
+                setEditingAccount(null);
+              }}
+              className="btn-secondary text-xs"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary text-xs">
+              {editingAccount ? 'Save Changes' : 'Link Account'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

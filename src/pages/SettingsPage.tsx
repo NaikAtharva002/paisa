@@ -6,6 +6,7 @@ import {
   Settings as SettingsIcon,
   Shield,
   Download,
+  Upload,
   Trash2,
   CheckCircle2,
   HelpCircle,
@@ -13,9 +14,13 @@ import {
   Lock,
   Mail,
   ExternalLink,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { PublicPageModal } from '../components/public/PublicPageModal';
 import { PublicPageId } from '../components/public/PublicPagesContent';
+import { showToast } from '../components/common/Toast';
 
 export const SettingsPage: React.FC = () => {
   const profile = store.getProfile();
@@ -39,6 +44,44 @@ export const SettingsPage: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [activePublicPage, setActivePublicPage] = useState<PublicPageId | null>(null);
 
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    return (localStorage.getItem('paisa_theme') as 'light' | 'dark' | 'system') || 'system';
+  });
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    localStorage.setItem('paisa_theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (newTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+    showToast(`Theme switched to ${newTheme}`, 'info');
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const success = store.importFullDataBackup(content);
+      if (success) {
+        showToast('Backup restored successfully!', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showToast('Invalid backup file. Could not restore.', 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     store.updateUser({ display_name: displayName.trim() });
@@ -58,6 +101,7 @@ export const SettingsPage: React.FC = () => {
       preferred_tone: tone,
     });
 
+    showToast('Settings saved successfully!', 'success');
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
@@ -149,6 +193,21 @@ export const SettingsPage: React.FC = () => {
                 onChange={e => setSavingsTarget(Number(e.target.value))}
                 className="input-field mt-1 text-xs font-mono-num"
               />
+            </div>
+
+            <div>
+              <label className="section-title text-[#7F899F]">Daily Spend Target Override (₹/day)</label>
+              <input
+                type="number"
+                min="0"
+                value={dailyBudgetOverride || ''}
+                placeholder="Auto-calculated (0)"
+                onChange={e => setDailyBudgetOverride(Number(e.target.value))}
+                className="input-field mt-1 text-xs font-mono-num"
+              />
+              <p className="text-[10px] text-[#7F899F] mt-1">
+                Optional override to fix a strict daily allowance cap
+              </p>
             </div>
           </div>
         </div>
@@ -256,6 +315,51 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Appearance & Theme Mode */}
+        <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+          <div className="section-title text-[#7F899F]">Appearance & Theme</div>
+          <div className="grid grid-cols-3 gap-3 max-w-md">
+            <button
+              type="button"
+              onClick={() => handleThemeChange('light')}
+              className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all ${
+                theme === 'light'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] text-[#D4952B] font-bold shadow-xs'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] text-[#5E687D] hover:border-[#DFD7C7]'
+              }`}
+            >
+              <Sun className="w-5 h-5" />
+              <span className="text-xs">Light</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleThemeChange('dark')}
+              className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all ${
+                theme === 'dark'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] text-[#D4952B] font-bold shadow-xs'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] text-[#5E687D] hover:border-[#DFD7C7]'
+              }`}
+            >
+              <Moon className="w-5 h-5" />
+              <span className="text-xs">Dark</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleThemeChange('system')}
+              className={`p-3 rounded-2xl border flex flex-col items-center gap-1.5 transition-all ${
+                theme === 'system'
+                  ? 'border-[#D4952B] bg-[#FFF6E6] text-[#D4952B] font-bold shadow-xs'
+                  : 'border-[#EDE8E0] bg-[#FAF8F5] text-[#5E687D] hover:border-[#DFD7C7]'
+              }`}
+            >
+              <Monitor className="w-5 h-5" />
+              <span className="text-xs">System</span>
+            </button>
+          </div>
+        </div>
+
         {/* Submit Save Button */}
         <div className="flex justify-end gap-3 pt-2">
           <button type="submit" className="btn-primary text-xs px-6 py-2.5">
@@ -280,6 +384,29 @@ export const SettingsPage: React.FC = () => {
             <Download className="w-3.5 h-3.5" />
             <span>Export Backup</span>
           </button>
+        </div>
+
+        <div className="pt-4 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-[#181D26]">Import Financial Backup</div>
+            <p className="text-[11px] text-[#7F899F]">Restore previously exported JSON backup data</p>
+          </div>
+          <div>
+            <input
+              type="file"
+              id="backup-file-input"
+              accept=".json"
+              onChange={handleImportBackup}
+              className="sr-only"
+            />
+            <label
+              htmlFor="backup-file-input"
+              className="btn-secondary text-xs px-4 py-2 cursor-pointer flex items-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Import Backup</span>
+            </label>
+          </div>
         </div>
 
         <div className="pt-4 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3">

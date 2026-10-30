@@ -1121,6 +1121,28 @@ export const store = {
       app: 'Paisa — Your Daily Money Reality Check',
     };
     return JSON.stringify(dump, null, 2);
+  },
+
+  // Import full user data backup (Restore)
+  importFullDataBackup(jsonString: string): boolean {
+    try {
+      const data = JSON.parse(jsonString);
+      if (typeof localStorage === 'undefined') return false;
+      if (data.user) localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
+      if (data.financialProfile) localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(data.financialProfile));
+      if (data.accounts) localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(data.accounts));
+      if (data.categories) localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(data.categories));
+      if (data.transactions) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions));
+      if (data.recurring) localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(data.recurring));
+      if (data.savingsGoals) localStorage.setItem(STORAGE_KEYS.SAVINGS, JSON.stringify(data.savingsGoals));
+      if (data.notificationPreferences) localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(data.notificationPreferences));
+      if (data.bankConsents) localStorage.setItem(STORAGE_KEYS.CONSENTS, JSON.stringify(data.bankConsents));
+      notifyListeners();
+      return true;
+    } catch (e) {
+      console.error('Failed to parse and import backup:', e);
+      return false;
+    }
   }
 };
 

@@ -5,6 +5,13 @@ import {
   Pie,
   Cell,
   Tooltip,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from 'recharts';
 import { store } from '../../lib/storage';
 import {
@@ -16,6 +23,7 @@ import {
   calculateEssentialDiscretionarySplit,
 } from '../../lib/calculations';
 import { calculateMonthEndForecast } from '../../lib/forecasting';
+import { exportTransactionsToCsv } from '../../lib/csvParser';
 import {
   Download,
   Calendar,
@@ -29,6 +37,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
+  Activity,
+  BarChart3,
 } from 'lucide-react';
 
 export const MonthlyReportView: React.FC = () => {
@@ -108,6 +118,24 @@ export const MonthlyReportView: React.FC = () => {
 
   const avgDailySpend = daySpendMap.size > 0 ? totalExpense / daySpendMap.size : 0;
 
+  // 1. Daily Trend Line Chart Data (Day 1 to daysInMonth)
+  const dailyTrendData = Array.from({ length: daysInMonth }, (_, idx) => {
+    const dayNum = idx + 1;
+    const dayStr = `${selectedMonth}-${String(dayNum).padStart(2, '0')}`;
+    return {
+      day: `D${dayNum}`,
+      spent: daySpendMap.get(dayStr) || 0,
+      target: Math.round(dailyTarget),
+    };
+  });
+
+  // 2. Income vs Expense Bar Data
+  const incomeVsExpenseData = [
+    { name: 'Income', amount: totalIncome, fill: '#2E8B57' },
+    { name: 'Expenses', amount: totalExpense, fill: '#E06D53' },
+    { name: 'Net Savings', amount: Math.max(0, netCashFlow), fill: '#3B82F6' },
+  ];
+
   // Month-over-Month Comparison
   const momComparison = compareMonthlySpending(transactions, selectedMonth);
 
@@ -126,44 +154,80 @@ export const MonthlyReportView: React.FC = () => {
       })
     : null;
 
-  const handleDownloadReport = () => {
-    const reportSummary = `PAISA FINANCIAL MONTHLY REPORT\nMonth: ${selectedMonth}\nGenerated: ${new Date().toISOString()}\n\nSUMMARY\nTotal Income: ₹${totalIncome}\nTotal Expenses: ₹${totalExpense}\nNet Savings: ₹${netCashFlow}\nAverage Daily Spend: ₹${avgDailySpend.toFixed(2)}\nHighest Spend Day: ${highestSpendDay.date} (₹${highestSpendDay.amount})\nDays Within Budget: ${daysWithinBudget}\nDays Over Budget: ${daysOverBudget}\n\nESSENTIAL VS DISCRETIONARY\nEssential Needs: ₹${split.essentialTotal} (${split.essentialPercentage}%)\nDiscretionary Lifestyle: ₹${split.discretionaryTotal} (${split.discretionaryPercentage}%)\n\nTOP CATEGORIES\n${categoryChartData.map(c => `${c.name}: ₹${c.value}`).join('\n')}\n\nTOP MERCHANTS\n${topMerchants.map(m => `${m.merchant}: ₹${m.amount}`).join('\n')}`;
-
-    const blob = new Blob([reportSummary], { type: 'text/plain;charset=utf-8' });
+  const handleDownloadCsv = () => {
+    const csv = exportTransactionsToCsv(monthTxs);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `paisa_monthly_report_${selectedMonth}.txt`);
+    link.setAttribute('download', `paisa_statement_${selectedMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  const setMonthOffset = (offsetMonths: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - offsetMonths);
+    setSelectedMonth(d.toISOString().slice(0, 7));
+  };
+
   return (
     <div className="space-y-6 animate-in">
       {/* Month Selector & Download Toolbar */}
-      <div className="editorial-card p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] flex items-center justify-center text-[#D4952B] shadow-xs">
+      <div className="editorial-card p-5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] flex items-center justify-center text-[#D4952B] shadow-xs shrink-0">
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <div className="section-title text-[#7F899F]">Statement Month</div>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value)}
-              className="mt-1 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-bold text-[#181D26] focus:outline-hidden focus:border-[#181D26]"
-            />
+            <div className="section-title text-[#7F899F]">Statement Period</div>
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-bold text-[#181D26] focus:outline-hidden focus:border-[#181D26]"
+                aria-label="Select statement month"
+              />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setMonthOffset(0)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors ${
+                    selectedMonth === new Date().toISOString().slice(0, 7)
+                      ? 'bg-[#181D26] text-white border-[#181D26]'
+                      : 'bg-white text-[#5E687D] border-[#EDE8E0] hover:bg-[#FAF8F5]'
+                  }`}
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMonthOffset(1)}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border bg-white text-[#5E687D] border-[#EDE8E0] hover:bg-[#FAF8F5] transition-colors"
+                >
+                  Last Month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMonthOffset(2)}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg border bg-white text-[#5E687D] border-[#EDE8E0] hover:bg-[#FAF8F5] transition-colors"
+                >
+                  2 Mo Ago
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <button
-          onClick={handleDownloadReport}
-          className="btn-primary text-xs px-4 py-2"
+          onClick={handleDownloadCsv}
+          className="btn-primary text-xs px-4 py-2 shrink-0 self-start md:self-auto"
+          aria-label="Download statement as CSV"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>Download Statement</span>
+          <span>Download Statement (CSV)</span>
         </button>
       </div>
 
@@ -266,6 +330,114 @@ export const MonthlyReportView: React.FC = () => {
           <div className="text-2xl font-black font-mono-num text-[#181D26]">{formatINR(avgDailySpend)}</div>
           <div className="text-[11px] text-[#7F899F] mt-1 font-medium">
             Target allowance: {formatINR(dailyTarget)}/day
+          </div>
+        </div>
+      </div>
+
+      {/* Visual Analytics: Daily Spending Trend & Cash Flow Bar Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily Spending Trend Line Chart */}
+        <div className="editorial-card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-[#181D26] flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#D4952B]" />
+              <span>30-Day Daily Spending Trend</span>
+            </h3>
+            <span className="text-[10px] font-bold text-slate-500 uppercase">
+              Target: {formatINR(dailyTarget)}/d
+            </span>
+          </div>
+
+          <div className="h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EDE8E0" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#7F899F' }} stroke="#EDE8E0" />
+                <YAxis tick={{ fontSize: 10, fill: '#7F899F' }} stroke="#EDE8E0" tickFormatter={v => `₹${Math.round(v/1000)}k`} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="p-2.5 rounded-xl bg-white border border-[#EDE8E0] text-xs shadow-md">
+                          <div className="font-bold text-[#181D26] mb-1">{label}</div>
+                          <div className="text-[#E06D53] font-semibold">Spent: {formatINR(Number(payload[0]?.value || 0))}</div>
+                          <div className="text-[#7F899F]">Target: {formatINR(Number(payload[1]?.value || 0))}</div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Line type="monotone" dataKey="spent" stroke="#E06D53" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="Spent" />
+                <Line type="monotone" dataKey="target" stroke="#7F899F" strokeDasharray="3 3" strokeWidth={1.5} dot={false} name="Daily Target" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-between text-xs text-[#5E687D] pt-2 border-t border-[#EDE8E0]">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-0.5 bg-[#E06D53]" />
+              <span>Actual Daily Spent</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-0.5 border-t border-dashed border-[#7F899F]" />
+              <span>Daily Budget Target</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Income vs Expenses Bar Chart */}
+        <div className="editorial-card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-[#181D26] flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-[#2E8B57]" />
+              <span>Income vs Expenses vs Savings</span>
+            </h3>
+            <span className="text-[10px] font-bold text-slate-500 uppercase">
+              Net: {formatINR(netCashFlow)}
+            </span>
+          </div>
+
+          <div className="h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={incomeVsExpenseData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EDE8E0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#181D26', fontWeight: 600 }} stroke="#EDE8E0" />
+                <YAxis tick={{ fontSize: 10, fill: '#7F899F' }} stroke="#EDE8E0" tickFormatter={v => `₹${Math.round(v/1000)}k`} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0];
+                      return (
+                        <div className="p-2.5 rounded-xl bg-white border border-[#EDE8E0] text-xs shadow-md">
+                          <span className="font-bold text-[#181D26]">{d.payload.name}: </span>
+                          <span className="font-mono-num font-bold text-[#181D26]">{formatINR(Number(d.value))}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                  {incomeVsExpenseData.map((entry, index) => (
+                    <Cell key={`bar-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-[#EDE8E0]">
+            <div>
+              <span className="text-[10px] text-[#7F899F] block">Income</span>
+              <span className="font-bold text-[#2E8B57]">{formatINR(totalIncome)}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-[#7F899F] block">Expenses</span>
+              <span className="font-bold text-[#E06D53]">{formatINR(totalExpense)}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-[#7F899F] block">Savings</span>
+              <span className="font-bold text-[#3B82F6]">{formatINR(Math.max(0, netCashFlow))}</span>
+            </div>
           </div>
         </div>
       </div>

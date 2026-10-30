@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { store } from '../../lib/storage';
 import { formatINR, isSpendingExpense } from '../../lib/calculations';
-import { Target, Check, Edit2, ShieldAlert } from 'lucide-react';
+import { Target, Check, Edit2, ShieldAlert, Plus, Trash2, X, RefreshCw } from 'lucide-react';
+import { showToast } from '../common/Toast';
+import { Modal } from '../common/Modal';
 
 export const BudgetManager: React.FC = () => {
   const categories = store.getCategories();
@@ -9,6 +11,11 @@ export const BudgetManager: React.FC = () => {
   const profile = store.getProfile();
 
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newCatId, setNewCatId] = useState(categories[0]?.id || 'cat_food');
+  const [newAmount, setNewAmount] = useState('');
+  const [newPeriod, setNewPeriod] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [rollover, setRollover] = useState(false);
 
   // Calculate spending per category for current month
   const currentMonthPrefix = new Date().toISOString().slice(0, 7);
@@ -35,14 +42,39 @@ export const BudgetManager: React.FC = () => {
   const [editingCat, setEditingCat] = useState<string | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
 
-  const handleSaveBudget = (catId: string) => {
-    const val = parseFloat(budgetInput);
+  const handleSaveBudget = (catId: string, customVal?: number) => {
+    const val = customVal !== undefined ? customVal : parseFloat(budgetInput);
     if (!isNaN(val) && val >= 0) {
       store.updateCategoryBudget(catId, val);
       setCategoryBudgets(store.getCategoryBudgets());
+      const catName = categories.find(c => c.id === catId)?.name || catId;
+      showToast({
+        type: 'success',
+        title: 'Budget updated!',
+        message: `${catName} budget set to ${formatINR(val)}`,
+      });
     }
     setEditingCat(null);
     setBudgetInput('');
+  };
+
+  const handleCreateBudgetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(newAmount);
+    if (isNaN(amt) || amt < 0) {
+      alert('Please enter a valid budget amount');
+      return;
+    }
+    handleSaveBudget(newCatId, amt);
+    setIsCreateOpen(false);
+    setNewAmount('');
+  };
+
+  const handleDeleteBudget = (catId: string) => {
+    const catName = categories.find(c => c.id === catId)?.name || catId;
+    if (confirm(`Remove custom budget limit for "${catName}"?`)) {
+      handleSaveBudget(catId, 0);
+    }
   };
 
   const getCategoryColor = (index: number) => {
@@ -124,12 +156,21 @@ export const BudgetManager: React.FC = () => {
 
       {/* Category Breakdown Cards (Reference 2) */}
       <div className="space-y-3">
-        <div className="text-xs font-bold text-[#7F899F] uppercase tracking-wider px-2">
-          Category Budgets
+        <div className="flex items-center justify-between px-2">
+          <div className="text-xs font-bold text-[#7F899F] uppercase tracking-wider">
+            Category Budgets & Spending Caps
+          </div>
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="btn-primary text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Budget</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {categories.slice(0, 6).map((cat, i) => {
+          {categories.slice(0, 8).map((cat, i) => {
             const spent = monthSpendingMap.get(cat.id) || 0;
             const limit = categoryBudgets[cat.id] || 10000;
             const pct = Math.min(100, Math.round((spent / limit) * 100));
@@ -139,7 +180,7 @@ export const BudgetManager: React.FC = () => {
             return (
               <div
                 key={cat.id}
-                className="p-5 rounded-2xl bg-white border border-[#EDE8E0] shadow-card hover:border-[#DFD7C7] transition-all space-y-3"
+                className="p-5 rounded-2xl bg-white border border-[#EDE8E0] shadow-card hover:border-[#DFD7C7] transition-all space-y-3 group"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -165,8 +206,16 @@ export const BudgetManager: React.FC = () => {
                         <button
                           onClick={() => handleSaveBudget(cat.id)}
                           className="btn-icon w-6 h-6 bg-[#EBF7EE] text-[#2E8B57]"
+                          title="Save"
                         >
                           <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setEditingCat(null)}
+                          className="btn-icon w-6 h-6 text-[#7F899F]"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
@@ -179,11 +228,20 @@ export const BudgetManager: React.FC = () => {
                             setEditingCat(cat.id);
                             setBudgetInput(String(limit));
                           }}
-                          className="text-[#A4ADC0] hover:text-[#181D26] p-1"
+                          className="text-[#A4ADC0] hover:text-[#181D26] p-1 rounded-lg"
                           title="Edit limit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
+                        {limit > 0 && (
+                          <button
+                            onClick={() => handleDeleteBudget(cat.id)}
+                            className="text-[#A4ADC0] hover:text-[#E06D53] p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Reset limit"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -209,6 +267,84 @@ export const BudgetManager: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Create Budget Modal */}
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Create Category Spending Budget"
+      >
+        <form onSubmit={handleCreateBudgetSubmit} className="space-y-4">
+          <div>
+            <label className="section-title text-[#7F899F]">Target Category</label>
+            <select
+              value={newCatId}
+              onChange={e => setNewCatId(e.target.value)}
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] outline-none"
+            >
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="section-title text-[#7F899F]">Monthly Limit Amount (INR ₹)</label>
+            <input
+              type="number"
+              required
+              min="0"
+              step="100"
+              value={newAmount}
+              onChange={e => setNewAmount(e.target.value)}
+              placeholder="e.g. 12000"
+              className="w-full mt-1 px-4 py-2.5 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-sm text-[#181D26] font-mono-num outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="section-title text-[#7F899F]">Budget Period</label>
+              <select
+                value={newPeriod}
+                onChange={e => setNewPeriod(e.target.value as any)}
+                className="w-full mt-1 px-3 py-2 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs text-[#181D26] outline-none"
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col justify-end pb-1">
+              <label className="flex items-center gap-2 text-xs text-[#3D4658] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rollover}
+                  onChange={e => setRollover(e.target.checked)}
+                  className="rounded accent-[#D4952B] w-4 h-4 cursor-pointer"
+                />
+                <span>Rollover unused funds</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#EDE8E0]">
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(false)}
+              className="btn-secondary text-xs"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary text-xs">
+              Save Budget
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

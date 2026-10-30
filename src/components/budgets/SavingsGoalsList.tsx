@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { SavingsGoal } from '../../types';
 import { store } from '../../lib/storage';
 import { formatINR, roundPaise, addMoney } from '../../lib/calculations';
-import { Plus, CheckCircle2, Laptop, Palmtree, ShieldCheck, Sparkles, Edit2, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle2, Laptop, Palmtree, ShieldCheck, Sparkles, Edit2, Trash2, Calendar, Coins } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Modal } from '../common/Modal';
+import { showToast } from '../common/Toast';
 
 export const SavingsGoalsList: React.FC = () => {
   const goals = store.getSavingsGoals();
@@ -59,6 +60,12 @@ export const SavingsGoalsList: React.FC = () => {
     const newAmount = addMoney(goal.current_amount, val);
     store.updateSavingsGoal(goal.id, { current_amount: newAmount });
 
+    showToast({
+      type: 'success',
+      title: `Added ${formatINR(val)} to ${goal.name}!`,
+      message: `Total saved: ${formatINR(newAmount)} of ${formatINR(goal.target_amount)}`,
+    });
+
     if (newAmount >= goal.target_amount) {
       try {
         confetti({
@@ -92,6 +99,11 @@ export const SavingsGoalsList: React.FC = () => {
         current_amount: current,
         target_date: goalDate,
       });
+      showToast({
+        type: 'success',
+        title: 'Goal updated!',
+        message: `${goalName.trim()} target: ${formatINR(target)}`,
+      });
     } else {
       store.addSavingsGoal({
         id: `goal_${Date.now()}`,
@@ -102,6 +114,11 @@ export const SavingsGoalsList: React.FC = () => {
         target_date: goalDate,
         icon: 'PiggyBank',
         category: 'general',
+      });
+      showToast({
+        type: 'success',
+        title: 'New Savings Goal created!',
+        message: `${goalName.trim()} target: ${formatINR(target)} by ${goalDate}`,
       });
     }
 
@@ -192,6 +209,10 @@ export const SavingsGoalsList: React.FC = () => {
           filteredGoals.map(goal => {
             const pct = goal.target_amount > 0 ? Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100)) : 0;
             const isDone = goal.current_amount >= goal.target_amount;
+            const daysLeft = Math.max(0, Math.ceil((new Date(goal.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+            const monthsLeft = Math.max(1, Math.ceil(daysLeft / 30));
+            const remainingToSave = Math.max(0, goal.target_amount - goal.current_amount);
+            const requiredMonthly = Math.round(remainingToSave / monthsLeft);
 
             return (
               <div
@@ -204,7 +225,17 @@ export const SavingsGoalsList: React.FC = () => {
                       {getGoalIcon(goal.name)}
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-[#181D26] truncate">{goal.name}</div>
-                        <div className="text-[11px] text-[#7F899F] mt-0.5">Target by {goal.target_date}</div>
+                        <div className="text-[11px] text-[#7F899F] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>Target by {goal.target_date}</span>
+                          {!isDone && (
+                            <>
+                              <span>•</span>
+                              <span className="text-[#3D4658] font-medium">{daysLeft} days left</span>
+                              <span>•</span>
+                              <span className="text-[#2E8B57] font-bold font-mono-num">{formatINR(requiredMonthly)}/mo</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
 

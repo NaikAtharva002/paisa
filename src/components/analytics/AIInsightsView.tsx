@@ -34,6 +34,7 @@ export interface AIInsightItem {
   title: string;
   body: string;
   action: string;
+  targetScreen?: 'budgets' | 'goals' | 'recurring' | 'settings' | 'analytics';
   supportingData: {
     period: string;
     metric: string;
@@ -41,7 +42,21 @@ export interface AIInsightItem {
   };
 }
 
-export const AIInsightsView: React.FC = () => {
+interface AIInsightsViewProps {
+  onNavigateToBudgets?: (categoryId?: string) => void;
+  onNavigateToGoals?: () => void;
+  onNavigateToBills?: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToAnalytics?: () => void;
+}
+
+export const AIInsightsView: React.FC<AIInsightsViewProps> = ({
+  onNavigateToBudgets,
+  onNavigateToGoals,
+  onNavigateToBills,
+  onNavigateToSettings,
+  onNavigateToAnalytics,
+}) => {
   const [filter, setFilter] = useState<'all' | 'insights' | 'suggestions' | 'alerts'>('all');
   const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
@@ -454,6 +469,30 @@ export const AIInsightsView: React.FC = () => {
 
                       {/* Actions & Dismiss Button */}
                       <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        {item.action && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const act = item.action.toLowerCase();
+                              if (act.includes('budget') || item.id === 'ins_top_cat') {
+                                onNavigateToBudgets?.();
+                              } else if (act.includes('goal') || item.id === 'ins_goal_milestone') {
+                                onNavigateToGoals?.();
+                              } else if (act.includes('subscript') || act.includes('bill') || item.id === 'ins_subs_audit') {
+                                onNavigateToBills?.();
+                              } else if (act.includes('compare') || act.includes('split') || act.includes('projection')) {
+                                onNavigateToAnalytics?.();
+                              } else {
+                                onNavigateToSettings?.();
+                              }
+                            }}
+                            className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1 shadow-sm"
+                          >
+                            <span>{item.action}</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+
                         <button
                           onClick={() => setExpandedTraceId(isExpanded ? null : item.id)}
                           className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
