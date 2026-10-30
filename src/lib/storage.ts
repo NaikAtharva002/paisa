@@ -11,6 +11,9 @@ import {
   BankConsent,
 } from '../types';
 import { DEFAULT_CATEGORIES } from './categorization';
+import { sanitizeString } from './security';
+import { auditLogger } from './auditLogger';
+import { authService } from './authService';
 
 const STORAGE_KEYS = {
   USER: 'paisa_user',
@@ -445,6 +448,7 @@ export const DEFAULT_CATEGORY_BUDGETS: Record<string, number> = {
 // ----------------------------------------------------------------------
 function getStored<T>(key: string, fallback: T): T {
   try {
+    if (typeof localStorage === 'undefined') return fallback;
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw);
@@ -456,6 +460,7 @@ function getStored<T>(key: string, fallback: T): T {
 
 function setStored<T>(key: string, value: T): void {
   try {
+    if (typeof localStorage === 'undefined') return;
     localStorage.setItem(key, JSON.stringify(value));
     notifyListeners();
   } catch (e) {
@@ -469,13 +474,15 @@ function setStored<T>(key: string, value: T): void {
 export const store = {
   // Initialization check
   init() {
-    if (!localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
       this.resetToDemoData();
     }
   },
 
   resetToDemoData() {
-    localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    }
     setStored(STORAGE_KEYS.USER, DEFAULT_USER);
     setStored(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
     setStored(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS);
@@ -490,18 +497,30 @@ export const store = {
   },
 
   clearAllData() {
-    localStorage.clear();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
     notifyListeners();
   },
 
   // Onboarding
   isOnboarded(): boolean {
+    if (typeof localStorage === 'undefined') return false;
     return localStorage.getItem(STORAGE_KEYS.ONBOARDED) === 'true';
   },
 
   setOnboarded(value: boolean) {
-    localStorage.setItem(STORAGE_KEYS.ONBOARDED, value ? 'true' : 'false');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDED, value ? 'true' : 'false');
+    }
     notifyListeners();
+  },
+
+  // Active Session & Tenant ID
+  getActiveUserId(): string {
+    const authUser = authService.getCurrentUser();
+    if (authUser) return authUser.id;
+    return this.getUser().id;
   },
 
   // User
@@ -511,7 +530,11 @@ export const store = {
 
   updateUser(user: Partial<User>) {
     const current = this.getUser();
-    setStored(STORAGE_KEYS.USER, { ...current, ...user });
+    setStored(STORAGE_KEYS.USER, {
+      ...current,
+      ...user,
+      display_name: user.display_name ? sanitizeString(user.display_name) : current.display_name,
+    });
   },
 
   // Financial Profile
@@ -524,55 +547,99 @@ export const store = {
     setStored(STORAGE_KEYS.PROFILE, { ...current, ...profile });
   },
 
-  // Transactions
-  getTransactions(): Transaction[] {
+  // Transactions (Multi-tenant isolated)
+  getAllRawTransactions(): Transaction[] {
     return getStored<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, DEFAULT_TRANSACTIONS);
   },
 
+  getTransactions(userId?: string): Transaction[] {
+    const targetUserId = userId || this.getActiveUserId();
+    const all = this.getAllRawTransactions();
+    return all.filter(t => t.user_id === targetUserId);
+  },
+
   addTransaction(tx: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>): Transaction {
+    const activeUserId = tx.user_id || this.getActiveUserId();
     const newTx: Transaction = {
       ...tx,
+      user_id: activeUserId,
+      merchant: sanitizeString(tx.merchant),
+      description: sanitizeString(tx.description),
+      notes: sanitizeString(tx.notes),
       id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    const list = [newTx, ...this.getTransactions()];
+    const list = [newTx, ...this.getAllRawTransactions()];
     setStored(STORAGE_KEYS.TRANSACTIONS, list);
     return newTx;
   },
 
-  updateTransaction(id: string, updates: Partial<Transaction>): Transaction | null {
-    const list = this.getTransactions();
-    const idx = list.findIndex(t => t.id === id);
+  updateTransaction(id: string, updates: Partial<Transaction>, requestingUserId?: string): Transaction | null {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawTransactions();
+    const idx = all.findIndex(t => t.id === id);
     if (idx === -1) return null;
+
+    // Tenant Isolation Guard
+    if (all[idx].user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to modify transaction ${id} owned by ${all[idx].user_id}`,
+        success: false,
+      });
+      return null;
+    }
+
     const updated: Transaction = {
-      ...list[idx],
+      ...all[idx],
       ...updates,
+      merchant: updates.merchant !== undefined ? sanitizeString(updates.merchant) : all[idx].merchant,
+      description: updates.description !== undefined ? sanitizeString(updates.description) : all[idx].description,
+      notes: updates.notes !== undefined ? sanitizeString(updates.notes) : all[idx].notes,
       updated_at: new Date().toISOString(),
     };
-    list[idx] = updated;
-    setStored(STORAGE_KEYS.TRANSACTIONS, list);
+    all[idx] = updated;
+    setStored(STORAGE_KEYS.TRANSACTIONS, all);
     return updated;
   },
 
-  deleteTransaction(id: string): boolean {
-    const list = this.getTransactions();
-    const filtered = list.filter(t => t.id !== id);
-    if (filtered.length !== list.length) {
-      setStored(STORAGE_KEYS.TRANSACTIONS, filtered);
-      return true;
+  deleteTransaction(id: string, requestingUserId?: string): boolean {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawTransactions();
+    const target = all.find(t => t.id === id);
+    if (!target) return false;
+
+    // Tenant Isolation Guard
+    if (target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to delete transaction ${id} owned by ${target.user_id}`,
+        success: false,
+      });
+      return false;
     }
-    return false;
+
+    const filtered = all.filter(t => t.id !== id);
+    setStored(STORAGE_KEYS.TRANSACTIONS, filtered);
+    return true;
   },
 
   addTransactionsBulk(newTxs: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>[]): number {
+    const activeUserId = this.getActiveUserId();
     const toAdd: Transaction[] = newTxs.map(tx => ({
       ...tx,
+      user_id: tx.user_id || activeUserId,
+      merchant: sanitizeString(tx.merchant),
+      description: sanitizeString(tx.description),
+      notes: sanitizeString(tx.notes),
       id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
-    const combined = [...toAdd, ...this.getTransactions()];
+    const combined = [...toAdd, ...this.getAllRawTransactions()];
     setStored(STORAGE_KEYS.TRANSACTIONS, combined);
     return toAdd.length;
   },
@@ -598,74 +665,209 @@ export const store = {
   },
 
   addCategory(category: Category) {
-    const list = [...this.getCategories(), category];
+    const list = [...this.getCategories(), {
+      ...category,
+      name: sanitizeString(category.name),
+    }];
     setStored(STORAGE_KEYS.CATEGORIES, list);
   },
 
-  // Accounts
-  getAccounts(): Account[] {
+  // Accounts (Multi-tenant isolated)
+  getAllRawAccounts(): Account[] {
     return getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS);
   },
 
-  updateAccount(id: string, updates: Partial<Account>) {
-    const list = this.getAccounts();
-    const updated = list.map(a => a.id === id ? { ...a, ...updates } : a);
-    setStored(STORAGE_KEYS.ACCOUNTS, updated);
+  getAccounts(userId?: string): Account[] {
+    const activeUserId = userId || this.getActiveUserId();
+    return this.getAllRawAccounts().filter(a => a.user_id === activeUserId);
+  },
+
+  updateAccount(id: string, updates: Partial<Account>, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawAccounts();
+    const idx = all.findIndex(a => a.id === id);
+    if (idx === -1) return;
+
+    if (all[idx].user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to modify account ${id} owned by ${all[idx].user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    all[idx] = {
+      ...all[idx],
+      ...updates,
+      account_name: updates.account_name ? sanitizeString(updates.account_name) : all[idx].account_name,
+    };
+    setStored(STORAGE_KEYS.ACCOUNTS, all);
   },
 
   addAccount(account: Account) {
-    const list = [...this.getAccounts(), account];
+    const activeUserId = account.user_id || this.getActiveUserId();
+    const newAcc = {
+      ...account,
+      user_id: activeUserId,
+      account_name: sanitizeString(account.account_name),
+    };
+    const list = [...this.getAllRawAccounts(), newAcc];
     setStored(STORAGE_KEYS.ACCOUNTS, list);
   },
 
-  disconnectAccount(id: string) {
-    this.updateAccount(id, { connection_status: 'disconnected' });
+  disconnectAccount(id: string, requestingUserId?: string) {
+    this.updateAccount(id, { connection_status: 'disconnected' }, requestingUserId);
   },
 
-  deleteAccount(id: string) {
-    const list = this.getAccounts().filter(a => a.id !== id);
+  deleteAccount(id: string, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawAccounts();
+    const target = all.find(a => a.id === id);
+    if (!target) return;
+
+    if (target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to delete account ${id} owned by ${target.user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    const list = all.filter(a => a.id !== id);
     setStored(STORAGE_KEYS.ACCOUNTS, list);
   },
 
-  // Recurring Payments
-  getRecurringPayments(): RecurringPayment[] {
+  // Recurring Payments (Multi-tenant isolated)
+  getAllRawRecurringPayments(): RecurringPayment[] {
     return getStored<RecurringPayment[]>(STORAGE_KEYS.RECURRING, DEFAULT_RECURRING);
   },
 
+  getRecurringPayments(userId?: string): RecurringPayment[] {
+    const activeUserId = userId || this.getActiveUserId();
+    return this.getAllRawRecurringPayments().filter(r => r.user_id === activeUserId);
+  },
+
   addRecurringPayment(item: RecurringPayment) {
-    const list = [...this.getRecurringPayments(), item];
+    const activeUserId = item.user_id || this.getActiveUserId();
+    const newItem = {
+      ...item,
+      user_id: activeUserId,
+      name: sanitizeString(item.name),
+    };
+    const list = [...this.getAllRawRecurringPayments(), newItem];
     setStored(STORAGE_KEYS.RECURRING, list);
   },
 
-  updateRecurringPayment(id: string, updates: Partial<RecurringPayment>) {
-    const list = this.getRecurringPayments();
-    const updated = list.map(r => r.id === id ? { ...r, ...updates } : r);
-    setStored(STORAGE_KEYS.RECURRING, updated);
+  updateRecurringPayment(id: string, updates: Partial<RecurringPayment>, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawRecurringPayments();
+    const idx = all.findIndex(r => r.id === id);
+    if (idx === -1) return;
+
+    if (all[idx].user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to update recurring bill ${id} owned by ${all[idx].user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    all[idx] = {
+      ...all[idx],
+      ...updates,
+      name: updates.name ? sanitizeString(updates.name) : all[idx].name,
+    };
+    setStored(STORAGE_KEYS.RECURRING, all);
   },
 
-  deleteRecurringPayment(id: string) {
-    const list = this.getRecurringPayments().filter(r => r.id !== id);
+  deleteRecurringPayment(id: string, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawRecurringPayments();
+    const target = all.find(r => r.id === id);
+    if (!target) return;
+
+    if (target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to delete recurring bill ${id} owned by ${target.user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    const list = all.filter(r => r.id !== id);
     setStored(STORAGE_KEYS.RECURRING, list);
   },
 
-  // Savings Goals
-  getSavingsGoals(): SavingsGoal[] {
+  // Savings Goals (Multi-tenant isolated)
+  getAllRawSavingsGoals(): SavingsGoal[] {
     return getStored<SavingsGoal[]>(STORAGE_KEYS.SAVINGS, DEFAULT_SAVINGS_GOALS);
   },
 
+  getSavingsGoals(userId?: string): SavingsGoal[] {
+    const activeUserId = userId || this.getActiveUserId();
+    return this.getAllRawSavingsGoals().filter(g => g.user_id === activeUserId);
+  },
+
   addSavingsGoal(goal: SavingsGoal) {
-    const list = [...this.getSavingsGoals(), goal];
+    const activeUserId = goal.user_id || this.getActiveUserId();
+    const newGoal = {
+      ...goal,
+      user_id: activeUserId,
+      name: sanitizeString(goal.name),
+    };
+    const list = [...this.getAllRawSavingsGoals(), newGoal];
     setStored(STORAGE_KEYS.SAVINGS, list);
   },
 
-  updateSavingsGoal(id: string, updates: Partial<SavingsGoal>) {
-    const list = this.getSavingsGoals();
-    const updated = list.map(g => g.id === id ? { ...g, ...updates } : g);
-    setStored(STORAGE_KEYS.SAVINGS, updated);
+  updateSavingsGoal(id: string, updates: Partial<SavingsGoal>, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawSavingsGoals();
+    const idx = all.findIndex(g => g.id === id);
+    if (idx === -1) return;
+
+    if (all[idx].user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to update savings goal ${id} owned by ${all[idx].user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    all[idx] = {
+      ...all[idx],
+      ...updates,
+      name: updates.name ? sanitizeString(updates.name) : all[idx].name,
+    };
+    setStored(STORAGE_KEYS.SAVINGS, all);
   },
 
-  deleteSavingsGoal(id: string) {
-    const list = this.getSavingsGoals().filter(g => g.id !== id);
+  deleteSavingsGoal(id: string, requestingUserId?: string) {
+    const activeUserId = requestingUserId || this.getActiveUserId();
+    const all = this.getAllRawSavingsGoals();
+    const target = all.find(g => g.id === id);
+    if (!target) return;
+
+    if (target.user_id !== activeUserId) {
+      auditLogger.log({
+        userId: activeUserId,
+        eventType: 'CROSS_TENANT_VIOLATION_ATTEMPT',
+        details: `Blocked attempt to delete savings goal ${id} owned by ${target.user_id}`,
+        success: false,
+      });
+      return;
+    }
+
+    const list = all.filter(g => g.id !== id);
     setStored(STORAGE_KEYS.SAVINGS, list);
   },
 

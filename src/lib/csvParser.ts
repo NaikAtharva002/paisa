@@ -1,5 +1,6 @@
 import { Transaction, PaymentMethod, TransactionType } from '../types';
 import { suggestCategory } from './categorization';
+import { sanitizeCsvCell } from './security';
 
 export interface ParsedCsvRow {
   rowNumber: number;
@@ -253,15 +254,15 @@ export function exportTransactionsToCsv(transactions: Transaction[]): string {
 
   const rows = transactions.map(t => [
     t.transaction_date,
-    `"${(t.merchant || '').replace(/"/g, '""')}"`,
-    `"${(t.description || '').replace(/"/g, '""')}"`,
+    `"${sanitizeCsvCell(t.merchant || '').replace(/"/g, '""')}"`,
+    `"${sanitizeCsvCell(t.description || '').replace(/"/g, '""')}"`,
     t.category_id,
     t.amount.toFixed(2),
     t.transaction_type,
     t.payment_method,
     t.is_unplanned ? 'YES' : 'NO',
-    `"${(t.external_transaction_id || '').replace(/"/g, '""')}"`,
-    `"${(t.notes || '').replace(/"/g, '""')}"`,
+    `"${sanitizeCsvCell(t.external_transaction_id || '').replace(/"/g, '""')}"`,
+    `"${sanitizeCsvCell(t.notes || '').replace(/"/g, '""')}"`,
   ]);
 
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
