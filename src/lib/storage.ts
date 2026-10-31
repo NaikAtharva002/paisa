@@ -16,6 +16,7 @@ import { sanitizeString } from './security';
 import { roundPaise } from './calculations';
 import { auditLogger } from './auditLogger';
 import { authService } from './authService';
+import { recordLocalStoreMutation } from './sync/syncBridge';
 
 const STORAGE_KEYS = {
   USER: 'paisa_user',
@@ -580,6 +581,7 @@ export const store = {
     };
     const list = [newTx, ...this.getAllRawTransactions()];
     setStored(STORAGE_KEYS.TRANSACTIONS, list);
+    recordLocalStoreMutation('transactions', 'insert', newTx.id, activeUserId, newTx as unknown as Record<string, unknown>);
     return newTx;
   },
 
@@ -611,6 +613,7 @@ export const store = {
     };
     all[idx] = updated;
     setStored(STORAGE_KEYS.TRANSACTIONS, all);
+    recordLocalStoreMutation('transactions', 'update', updated.id, activeUserId, updated as unknown as Record<string, unknown>);
     return updated;
   },
 
@@ -633,6 +636,7 @@ export const store = {
 
     const filtered = all.filter(t => t.id !== id);
     setStored(STORAGE_KEYS.TRANSACTIONS, filtered);
+    recordLocalStoreMutation('transactions', 'delete', id, activeUserId, { id, user_id: activeUserId });
     return true;
   },
 
@@ -726,6 +730,7 @@ export const store = {
     };
     const list = [...this.getAllRawAccounts(), newAcc];
     setStored(STORAGE_KEYS.ACCOUNTS, list);
+    recordLocalStoreMutation('accounts', 'insert', newAcc.id, activeUserId, newAcc as unknown as Record<string, unknown>);
     return newAcc;
   },
 
@@ -751,6 +756,7 @@ export const store = {
 
     const list = all.filter(a => a.id !== id);
     setStored(STORAGE_KEYS.ACCOUNTS, list);
+    recordLocalStoreMutation('accounts', 'delete', id, activeUserId, { id, user_id: activeUserId });
   },
 
   // Recurring Payments (Multi-tenant isolated)

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Bell, Search, Sparkles, Leaf, Shield } from 'lucide-react';
 import { RealityTone } from '../../types';
 import { getNotifications } from '../../lib/notifications';
+import { SyncStatusBadge } from './SyncStatusBadge';
 
 interface HeaderProps {
   onOpenAddExpense: () => void;
@@ -67,6 +68,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Tools (Tone, Notifications, Add Expense, Profile) */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Two-Way Cloud Sync Status Badge */}
+          <SyncStatusBadge />
+
           {/* Tone Selector */}
           <div className="relative hidden md:block">
             <button
