@@ -5,6 +5,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/floorplan",
+      "destination": "/floorplan/index.html"
+    },
+    {
+      "source": "/floorplan/(.*)",
+      "destination": "/floorplan/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }
