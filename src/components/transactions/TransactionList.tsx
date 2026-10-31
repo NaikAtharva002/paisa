@@ -303,11 +303,39 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       </div>
 
       {/* Date-Grouped Transaction Cards (Reference 2) */}
-      {Object.keys(groups).length === 0 ? (
+      {transactions.length === 0 ? (
+        <div className="p-10 text-center rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] text-[#D4952B] flex items-center justify-center mx-auto shadow-xs">
+            <Receipt className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-black text-base text-[#181D26]">Clean Financial Ledger</h3>
+            <p className="text-xs text-[#7F899F] max-w-sm mx-auto mt-1">
+              No transactions recorded yet. Import an official bank statement (Excel, PDF, CSV) or record your first transaction to get started.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <button
+              onClick={onOpenCsvImport}
+              className="px-4 py-2 rounded-xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#262D3B] transition-all flex items-center gap-1.5 shadow-xs"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#D4952B]" />
+              <span>Import Statement</span>
+            </button>
+            <button
+              onClick={onAddTransaction}
+              className="px-4 py-2 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-[#181D26] text-xs font-bold hover:border-[#D4952B] transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#2E8B57]" />
+              <span>Record Expense</span>
+            </button>
+          </div>
+        </div>
+      ) : Object.keys(groups).length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-2">
           <Receipt className="w-8 h-8 text-[#A4ADC0] mx-auto" />
           <div className="font-bold text-sm text-[#181D26]">No transactions found</div>
-          <p className="text-xs text-[#7F899F]">Try clearing filters or tap Add to record a new transaction.</p>
+          <p className="text-xs text-[#7F899F]">Try clearing filters or search keywords.</p>
         </div>
       ) : (
         Object.entries(groups).map(([groupLabel, txList]) => (

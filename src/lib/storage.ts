@@ -12,6 +12,7 @@ import {
   ImportRecord,
 } from '../types';
 import { DEFAULT_CATEGORIES, MerchantRule } from './categorization';
+import { PersonEntity } from './transactionIntelligence';
 import { sanitizeString } from './security';
 import { roundPaise } from './calculations';
 import { auditLogger } from './auditLogger';
@@ -34,6 +35,7 @@ const STORAGE_KEYS = {
   DISMISSED_INSIGHTS: 'paisa_dismissed_insights',
   AI_INSIGHTS_ENABLED: 'paisa_ai_insights_enabled',
   IMPORT_HISTORY: 'paisa_import_history',
+  PEOPLE_DIRECTORY: 'paisa_people_directory',
 };
 
 // Listeners for reactive updates
@@ -58,6 +60,27 @@ function notifyListeners() {
 }
 
 // ----------------------------------------------------------------------
+
+export const CLEAN_USER: User = {
+  id: 'usr_me',
+  display_name: 'My Account',
+  email: '',
+  preferred_currency: 'INR',
+  timezone: 'Asia/Kolkata',
+  created_at: new Date().toISOString(),
+};
+
+export const CLEAN_PROFILE: FinancialProfile = {
+  user_id: 'usr_me',
+  monthly_income: 0,
+  salary_credit_day: 1,
+  budgeting_mode: 'income_equivalent',
+  savings_target: 0,
+  fixed_commitments: 0,
+  daily_budget_override: 0,
+  monthly_spending_target: 0,
+};
+
 // Initial Demo Data
 // ----------------------------------------------------------------------
 const DEFAULT_USER: User = {
@@ -482,8 +505,81 @@ export const store = {
   // Initialization check
   init() {
     if (typeof localStorage !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
-      this.resetToDemoData();
+      this.initializeCleanSlate();
     }
+  },
+
+  initializeCleanSlate() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    }
+    setStored(STORAGE_KEYS.USER, CLEAN_USER);
+    setStored(STORAGE_KEYS.PROFILE, CLEAN_PROFILE);
+    setStored(STORAGE_KEYS.ACCOUNTS, []);
+    setStored(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+    setStored(STORAGE_KEYS.TRANSACTIONS, []);
+    setStored(STORAGE_KEYS.RECURRING, []);
+    setStored(STORAGE_KEYS.SAVINGS, []);
+    setStored(STORAGE_KEYS.NOTIFICATIONS, DEFAULT_NOTIFICATIONS);
+    setStored(STORAGE_KEYS.CONSENTS, []);
+    setStored(STORAGE_KEYS.BUDGETS, {});
+    setStored(STORAGE_KEYS.PEOPLE_DIRECTORY, []);
+    notifyListeners();
+  },
+
+  seedDemoDataForTesting() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    }
+    setStored(STORAGE_KEYS.USER, DEFAULT_USER);
+    setStored(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
+    setStored(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS);
+    setStored(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+    setStored(STORAGE_KEYS.TRANSACTIONS, DEFAULT_TRANSACTIONS);
+    setStored(STORAGE_KEYS.RECURRING, DEFAULT_RECURRING);
+    setStored(STORAGE_KEYS.SAVINGS, DEFAULT_SAVINGS_GOALS);
+    setStored(STORAGE_KEYS.NOTIFICATIONS, DEFAULT_NOTIFICATIONS);
+    setStored(STORAGE_KEYS.CONSENTS, DEFAULT_CONSENTS);
+    setStored(STORAGE_KEYS.BUDGETS, DEFAULT_CATEGORY_BUDGETS);
+    notifyListeners();
+  },
+
+  // People & Merchants Directory
+  getPeople(): PersonEntity[] {
+    return getStored<PersonEntity[]>(STORAGE_KEYS.PEOPLE_DIRECTORY, []);
+  },
+
+  addPerson(person: Omit<PersonEntity, 'id' | 'created_at' | 'updated_at'>): PersonEntity {
+    const activeUserId = person.user_id || this.getActiveUserId();
+    const newPerson: PersonEntity = {
+      ...person,
+      id: `person_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      user_id: activeUserId,
+      display_name: sanitizeString(person.display_name),
+      aliases: (person.aliases || []).map(a => sanitizeString(a)),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const list = [...this.getPeople(), newPerson];
+    setStored(STORAGE_KEYS.PEOPLE_DIRECTORY, list);
+    return newPerson;
+  },
+
+  updatePerson(id: string, updates: Partial<PersonEntity>): PersonEntity | null {
+    const list = this.getPeople();
+    const idx = list.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    const updated = { ...list[idx], ...updates, updated_at: new Date().toISOString() };
+    list[idx] = updated;
+    setStored(STORAGE_KEYS.PEOPLE_DIRECTORY, list);
+    return updated;
+  },
+
+  deletePerson(id: string): boolean {
+    const list = this.getPeople();
+    const filtered = list.filter(p => p.id !== id);
+    setStored(STORAGE_KEYS.PEOPLE_DIRECTORY, filtered);
+    return true;
   },
 
   resetToDemoData() {
@@ -532,7 +628,7 @@ export const store = {
 
   // User
   getUser(): User {
-    return getStored<User>(STORAGE_KEYS.USER, DEFAULT_USER);
+    return getStored<User>(STORAGE_KEYS.USER, CLEAN_USER);
   },
 
   updateUser(user: Partial<User>) {
@@ -546,7 +642,7 @@ export const store = {
 
   // Financial Profile
   getProfile(): FinancialProfile {
-    return getStored<FinancialProfile>(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
+    return getStored<FinancialProfile>(STORAGE_KEYS.PROFILE, CLEAN_PROFILE);
   },
 
   updateProfile(profile: Partial<FinancialProfile>) {
@@ -556,7 +652,7 @@ export const store = {
 
   // Transactions (Multi-tenant isolated)
   getAllRawTransactions(): Transaction[] {
-    return getStored<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, DEFAULT_TRANSACTIONS);
+    return getStored<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
   },
 
   getTransactions(userId?: string): Transaction[] {
@@ -660,7 +756,7 @@ export const store = {
 
   // Budgets
   getCategoryBudgets(): Record<string, number> {
-    return getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, DEFAULT_CATEGORY_BUDGETS);
+    return getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
   },
 
   updateCategoryBudget(categoryId: string, limit: number): void {
@@ -688,7 +784,7 @@ export const store = {
 
   // Accounts (Multi-tenant isolated)
   getAllRawAccounts(): Account[] {
-    return getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, DEFAULT_ACCOUNTS);
+    return getStored<Account[]>(STORAGE_KEYS.ACCOUNTS, []);
   },
 
   getAccounts(userId?: string): Account[] {
@@ -761,7 +857,7 @@ export const store = {
 
   // Recurring Payments (Multi-tenant isolated)
   getAllRawRecurringPayments(): RecurringPayment[] {
-    return getStored<RecurringPayment[]>(STORAGE_KEYS.RECURRING, DEFAULT_RECURRING);
+    return getStored<RecurringPayment[]>(STORAGE_KEYS.RECURRING, []);
   },
 
   getRecurringPayments(userId?: string): RecurringPayment[] {
@@ -832,7 +928,7 @@ export const store = {
 
   // Savings Goals (Multi-tenant isolated)
   getAllRawSavingsGoals(): SavingsGoal[] {
-    return getStored<SavingsGoal[]>(STORAGE_KEYS.SAVINGS, DEFAULT_SAVINGS_GOALS);
+    return getStored<SavingsGoal[]>(STORAGE_KEYS.SAVINGS, []);
   },
 
   getSavingsGoals(userId?: string): SavingsGoal[] {
@@ -913,7 +1009,7 @@ export const store = {
 
   // Bank Consents (Multi-tenant isolated)
   getAllRawBankConsents(): BankConsent[] {
-    return getStored<BankConsent[]>(STORAGE_KEYS.CONSENTS, DEFAULT_CONSENTS);
+    return getStored<BankConsent[]>(STORAGE_KEYS.CONSENTS, []);
   },
 
   getBankConsents(userId?: string): BankConsent[] {

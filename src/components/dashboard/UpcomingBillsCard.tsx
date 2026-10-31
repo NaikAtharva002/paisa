@@ -70,38 +70,50 @@ export const UpcomingBillsCard: React.FC<UpcomingBillsCardProps> = ({
         </button>
       </div>
 
-      <div className="space-y-3">
-        {activeBills.slice(0, 3).map(bill => {
-          const dueDate = new Date(bill.next_due_date);
-          const daysLeft = Math.max(1, Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      {activeBills.length === 0 ? (
+        <div className="py-8 text-center text-xs text-[#7F899F] space-y-2">
+          <p>No upcoming bills or recurring commitments.</p>
+          <button
+            onClick={onViewAll}
+            className="text-[11px] font-bold text-[#D4952B] hover:underline"
+          >
+            + Add recurring bill
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {activeBills.slice(0, 3).map(bill => {
+            const dueDate = new Date(bill.next_due_date);
+            const daysLeft = Math.max(1, Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 
-          return (
-            <div
-              key={bill.id}
-              className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] hover:border-[#DFD7C7] transition-all flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                {getBrandLogo(bill.name)}
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-[#181D26] truncate">{bill.name}</div>
-                  <div className="text-[11px] text-[#7F899F] mt-0.5 font-mono-num flex items-center gap-1.5">
-                    <span className="font-bold text-[#181D26]">{formatINR(bill.amount)}</span>
-                    <span>•</span>
-                    <span className="text-[#D4952B] font-semibold">Due in {daysLeft} days</span>
+            return (
+              <div
+                key={bill.id}
+                className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] hover:border-[#DFD7C7] transition-all flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {getBrandLogo(bill.name)}
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-[#181D26] truncate">{bill.name}</div>
+                    <div className="text-[11px] text-[#7F899F] mt-0.5 font-mono-num flex items-center gap-1.5">
+                      <span className="font-bold text-[#181D26]">{formatINR(bill.amount)}</span>
+                      <span>•</span>
+                      <span className="text-[#D4952B] font-semibold">Due in {daysLeft} days</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => onPayBill?.(bill)}
-                className="px-3 py-1 rounded-full bg-white border border-[#EDE8E0] hover:border-[#D4952B] hover:text-[#D4952B] text-xs font-bold text-[#262D3B] transition-colors shadow-sm"
-              >
-                Pay
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <button
+                  onClick={() => onPayBill?.(bill)}
+                  className="px-3 py-1 rounded-full bg-white border border-[#EDE8E0] hover:border-[#D4952B] hover:text-[#D4952B] text-xs font-bold text-[#262D3B] transition-colors shadow-sm"
+                >
+                  Pay
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

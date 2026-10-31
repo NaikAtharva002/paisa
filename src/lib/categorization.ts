@@ -1,4 +1,5 @@
 import { Category } from '../types';
+import { analyzeAndCategorizeTransaction } from './transactionIntelligence';
 
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_food', name: 'Food & Dining', icon: 'Utensils', color: '#F97316', category_type: 'expense', is_default: true },
@@ -173,6 +174,23 @@ export function suggestCategory(
     }
   }
 
+  // 3. Check advanced transaction intelligence (VPA handles, Indian bank regex, salary, refund)
+  const intel = analyzeAndCategorizeTransaction(merchant, description, [], customRules);
+  if (intel.confidenceTier !== 'needs_review') {
+    const { tier, label } = getConfidenceTier(intel.confidence);
+    return {
+      categoryId: intel.categoryId,
+      isCreditCardPayment: intel.isCreditCardPayment,
+      isInternalTransfer: intel.isInternalTransfer,
+      confidence: intel.confidence,
+      confidenceTier: tier,
+      confidenceLabel: label,
+      matchedRule: intel.classificationSource,
+      isCustomLearned: intel.classificationSource === 'user_rule',
+      notes: intel.explanation,
+    };
+  }
+
   // Fallback to "Other" with needs_review tier
   const { tier, label } = getConfidenceTier(0.25);
   return {
@@ -183,5 +201,6 @@ export function suggestCategory(
     confidenceTier: tier,
     confidenceLabel: label,
     isCustomLearned: false,
+    notes: intel.explanation,
   };
 }

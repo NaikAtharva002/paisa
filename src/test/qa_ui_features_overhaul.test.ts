@@ -121,6 +121,22 @@ describe('PAISA Complete UI & Feature Overhaul Verification', () => {
 
   describe('5. Net Worth Aggregation', () => {
     it('should aggregate net worth accurately across bank and credit accounts', () => {
+      store.addAccount({
+        account_name: 'HDFC Savings Account',
+        account_type: 'savings',
+        balance: 150000,
+        provider: 'HDFC Bank',
+        connection_status: 'connected',
+        is_demo: false,
+      });
+      store.addAccount({
+        account_name: 'HDFC Regalia Credit Card',
+        account_type: 'credit_card',
+        balance: 25000,
+        provider: 'HDFC Bank',
+        connection_status: 'connected',
+        is_demo: false,
+      });
       const accounts = store.getAccounts();
       const netWorth = accounts.reduce((acc, a) => {
         if (a.account_type === 'credit_card') {

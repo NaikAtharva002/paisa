@@ -18,6 +18,7 @@ import { ActiveBudgetsCard } from '../components/dashboard/ActiveBudgetsCard';
 import { SavingsGoalsCard } from '../components/dashboard/SavingsGoalsCard';
 import { UpcomingBillsCard } from '../components/dashboard/UpcomingBillsCard';
 import { SpendingTimeline } from '../components/dashboard/SpendingTimeline';
+import { Upload, Plus, Sparkles, Landmark } from 'lucide-react';
 
 interface DashboardPageProps {
   onOpenAddExpense: () => void;
@@ -121,33 +122,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     })
     .sort((a, b) => b.amount - a.amount);
 
-  // Active budgets summary for the lower row card
-  const budgetSummary = [
-    {
-      id: 'cat_food',
-      name: 'Food & Dining',
-      icon: '🍱',
-      spent: catAmountMap.get('cat_food') || 0,
-      limit: categoryBudgets.cat_food || 12000,
-      color: '#E06D53',
-    },
-    {
-      id: 'cat_shopping',
-      name: 'Shopping',
-      icon: '🛍️',
-      spent: catAmountMap.get('cat_shopping') || 0,
-      limit: categoryBudgets.cat_shopping || 8000,
-      color: '#D4952B',
-    },
-    {
-      id: 'cat_transport',
-      name: 'Transport',
-      icon: '🚕',
-      spent: catAmountMap.get('cat_transport') || 0,
-      limit: categoryBudgets.cat_transport || 5000,
-      color: '#3B82F6',
-    },
-  ];
+  // Active budgets summary for the lower row card (computed strictly from user budgets)
+  const budgetSummary = Object.entries(categoryBudgets)
+    .filter(([_, limit]) => typeof limit === 'number' && limit > 0)
+    .map(([catId, limit]) => {
+      const cat = categories.find(c => c.id === catId);
+      return {
+        id: catId,
+        name: cat?.name || catId,
+        icon: '🏷️',
+        spent: catAmountMap.get(catId) || 0,
+        limit,
+        color: cat?.color || '#E06D53',
+      };
+    });
+
+  const isCleanSlate = transactions.length === 0 && accounts.length === 0;
 
   return (
     <div className="space-y-6 animate-in pb-12">
@@ -158,14 +148,53 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         displayName={user.display_name}
       />
 
+      {/* ── Clean Slate Guidance Card for New Users ── */}
+      {isCleanSlate && (
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FAF8F5] via-white to-[#FAF8F5] border-2 border-[#D4952B]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black text-[#181D26]">Zero Imaginary Data • Real Money Only</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF7EE] text-[#2E8B57] border border-[#CDE5D7]">
+                Clean Slate Ready
+              </span>
+            </div>
+            <p className="text-xs text-[#5E687D] max-w-xl leading-relaxed">
+              PAISA is initialized with ₹0 balances and zero fabricated transactions. Import your bank statement (Excel, PDF, CSV) or log your first expense to activate your real-time daily spending intelligence.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onOpenImport}
+              className="px-4 py-2 rounded-xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#262D3B] transition-all flex items-center gap-1.5 shadow-xs"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#D4952B]" />
+              <span>Import Statement</span>
+            </button>
+            <button
+              onClick={onOpenAddExpense}
+              className="px-4 py-2 rounded-xl bg-white border border-[#EDE8E0] text-[#181D26] text-xs font-bold hover:border-[#D4952B] transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#2E8B57]" />
+              <span>Add Expense</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── 2. Top 4 Core KPI Metrics (Reference 2) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Balance */}
         <StatCard
           title="Total Balance"
           value={formatINR(totalAccountBalance)}
-          badge="+12% this month"
-          badgeVariant="sage"
+          badge={
+            accounts.length > 0
+              ? `${accounts.length} linked account${accounts.length > 1 ? 's' : ''}`
+              : transactions.length > 0
+              ? 'Computed from transactions'
+              : 'Clean state'
+          }
+          badgeVariant={totalAccountBalance > 0 ? 'sage' : 'neutral'}
           trendType="sparkline"
           trendColor="#2E8B57"
           isPrivateToggle={true}
@@ -177,8 +206,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <StatCard
           title="Monthly Income"
           value={formatINR(mtdIncome)}
-          badge="Verified Salary"
-          badgeVariant="sage"
+          badge={
+            mtdIncome > 0
+              ? 'Verified Income'
+              : 'No income recorded'
+          }
+          badgeVariant={mtdIncome > 0 ? 'sage' : 'neutral'}
           trendType="bars"
           trendColor="#2E8B57"
         />
@@ -204,9 +237,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           badge={
             forecast.status === 'sufficient_data'
               ? `Proj. ${formatINR(forecast.projectedSavings)}`
-              : `${Math.round((currentSavings / (mtdIncome || 1)) * 100)}% rate`
+              : mtdIncome > 0
+              ? `${Math.round((currentSavings / (mtdIncome || 1)) * 100)}% rate`
+              : '0% rate'
           }
-          badgeVariant="sage"
+          badgeVariant={currentSavings > 0 ? 'sage' : 'neutral'}
           trendType="bars"
           trendColor="#2E8B57"
         />
