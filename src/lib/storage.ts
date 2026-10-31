@@ -502,16 +502,27 @@ function setStored<T>(key: string, value: T): void {
 // Store API
 // ----------------------------------------------------------------------
 export const store = {
-  // Initialization check
+  // Initialization check with Clean Slate Auto-Migration
   init() {
-    if (typeof localStorage !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
-      this.initializeCleanSlate();
+    if (typeof localStorage !== 'undefined') {
+      const hasCleanSlateEnforced = localStorage.getItem('paisa_clean_slate_enforced_v2');
+      if (!hasCleanSlateEnforced) {
+        // Enforce clean slate migration for existing browser storage: purge any legacy demo data!
+        this.initializeCleanSlate(false);
+        localStorage.setItem('paisa_clean_slate_enforced_v2', 'true');
+      } else if (!localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
+        this.initializeCleanSlate(false);
+      }
     }
   },
 
-  initializeCleanSlate() {
+  initializeCleanSlate(markOnboarded = false) {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+      if (markOnboarded) {
+        localStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ONBOARDED);
+      }
     }
     setStored(STORAGE_KEYS.USER, CLEAN_USER);
     setStored(STORAGE_KEYS.PROFILE, CLEAN_PROFILE);

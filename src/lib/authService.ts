@@ -275,6 +275,18 @@ export const authService = {
     return { success: true, user };
   },
 
+  loginAsGuest(displayName = 'Friend'): AuthUser {
+    const user: AuthUser = {
+      id: 'usr_me',
+      email: '',
+      display_name: displayName,
+      created_at: new Date().toISOString(),
+    };
+    this.createSession(user);
+    auditLogger.log({ userId: user.id, eventType: 'AUTH_LOGIN_SUCCESS', details: 'Guest offline session started.' });
+    return user;
+  },
+
   // Session Token Management
   createSession(user: AuthUser): AuthSession {
     const session: AuthSession = {

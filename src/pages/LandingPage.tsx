@@ -20,7 +20,8 @@ import { PublicPageId } from '../components/public/PublicPagesContent';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onExploreDemo: () => void;
+  onSignIn?: () => void;
+  onExploreDemo?: () => void;
 }
 
 const FEATURE_CARDS = [
@@ -76,7 +77,7 @@ const DEMO_EXPENSES = [
   { name: 'Shopping 🛍', amount: 750 },
 ];
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExploreDemo }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn, onExploreDemo }) => {
   const [demoMonthly, setDemoMonthly] = useState(100000);
   const dailyBudget = Number((demoMonthly / 30).toFixed(2));
   const totalSpent = DEMO_EXPENSES.reduce((sum, e) => sum + e.amount, 0);
@@ -132,10 +133,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
 
           <div className="flex items-center gap-3">
             <button
-              onClick={onExploreDemo}
+              onClick={onSignIn || onGetStarted}
               className="btn-secondary text-xs"
             >
-              Live Demo
+              Sign In
             </button>
             <button
               onClick={onGetStarted}

@@ -8,6 +8,8 @@ import { TransactionForm } from './components/transactions/TransactionForm';
 import { CsvImportModal } from './components/transactions/CsvImportModal';
 import { NotificationCenter } from './components/notifications/NotificationCenter';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
+import { AuthPage } from './components/auth/AuthPage';
+import { authService } from './lib/authService';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionList } from './components/transactions/TransactionList';
@@ -60,6 +62,8 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>(() => getTabFromUrl());
   const [showLanding, setShowLanding] = useState(!isOnboarded);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'signin' | 'signup'>('signin');
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
   // Modals state
@@ -174,20 +178,36 @@ export function App() {
     isNotificationsOpen,
   ]);
 
-  // If user clicks "Get Started" from landing page
-  if (showLanding && !showOnboarding) {
+  // 1. If Sign In / Sign Up page is active
+  if (showAuth) {
     return (
-      <LandingPage
-        onGetStarted={() => setShowOnboarding(true)}
-        onExploreDemo={() => {
-          setShowLanding(false);
-          setShowOnboarding(false);
+      <AuthPage
+        initialMode={authInitialMode}
+        onAuthSuccess={user => {
+          setShowAuth(false);
+          if (!store.isOnboarded()) {
+            setShowOnboarding(true);
+          } else {
+            setShowLanding(false);
+            setCurrentTab('dashboard');
+          }
         }}
+        onContinueOffline={() => {
+          authService.loginAsGuest();
+          setShowAuth(false);
+          if (!store.isOnboarded()) {
+            setShowOnboarding(true);
+          } else {
+            setShowLanding(false);
+            setCurrentTab('dashboard');
+          }
+        }}
+        onBackToLanding={() => setShowAuth(false)}
       />
     );
   }
 
-  // If onboarding wizard is active
+  // 2. If onboarding wizard is active
   if (showOnboarding) {
     return (
       <OnboardingWizard
@@ -195,6 +215,26 @@ export function App() {
           setShowOnboarding(false);
           setShowLanding(false);
           setCurrentTab('dashboard');
+        }}
+      />
+    );
+  }
+
+  // 3. If landing page is active
+  if (showLanding) {
+    return (
+      <LandingPage
+        onGetStarted={() => {
+          setAuthInitialMode('signup');
+          setShowAuth(true);
+        }}
+        onSignIn={() => {
+          setAuthInitialMode('signin');
+          setShowAuth(true);
+        }}
+        onExploreDemo={() => {
+          setAuthInitialMode('signup');
+          setShowAuth(true);
         }}
       />
     );
@@ -229,6 +269,22 @@ export function App() {
           currentTone={currentTone}
           onChangeTone={handleChangeTone}
           displayName={user.display_name}
+          userEmail={authService.getCurrentUser()?.email || user.email}
+          onSignOut={() => {
+            authService.logout();
+            setShowLanding(true);
+            setShowAuth(false);
+            setShowOnboarding(false);
+          }}
+          onResetCleanSlate={() => {
+            if (confirm('Reset PAISA to a 100% clean slate (₹0)? All transactions, accounts, and budgets will be reset.')) {
+              store.initializeCleanSlate(false);
+              setShowLanding(true);
+              setShowOnboarding(false);
+              setShowAuth(false);
+              window.location.reload();
+            }
+          }}
         />
 
         {/* Scrollable Page Body */}

@@ -12,14 +12,15 @@ interface OnboardingWizardProps {
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
 
-  // Form states
-  const [displayName, setDisplayName] = useState('');
-  const [monthlyIncome, setMonthlyIncome] = useState(100000);
+  // Form states initialized to clean zero
+  const currentUser = store.getUser();
+  const [displayName, setDisplayName] = useState(currentUser.display_name && currentUser.display_name !== 'My Account' ? currentUser.display_name : '');
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [salaryCreditDay, setSalaryCreditDay] = useState(1);
-  const [budgetingMode, setBudgetingMode] = useState<BudgetingMode>('spendable_income');
-  const [savingsTarget, setSavingsTarget] = useState(20000);
-  const [fixedCommitments, setFixedCommitments] = useState(25000);
-  const [dailyBudgetOverride, setDailyBudgetOverride] = useState(2500);
+  const [budgetingMode, setBudgetingMode] = useState<BudgetingMode>('income_equivalent');
+  const [savingsTarget, setSavingsTarget] = useState(0);
+  const [fixedCommitments, setFixedCommitments] = useState(0);
+  const [dailyBudgetOverride, setDailyBudgetOverride] = useState(0);
   const [preferredTone, setPreferredTone] = useState<RealityTone>('friendly');
 
   const currentYear = new Date().getFullYear();

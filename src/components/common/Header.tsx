@@ -11,6 +11,9 @@ interface HeaderProps {
   currentTone: RealityTone;
   onChangeTone: (tone: RealityTone) => void;
   displayName: string;
+  userEmail?: string;
+  onSignOut?: () => void;
+  onResetCleanSlate?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,8 +23,12 @@ export const Header: React.FC<HeaderProps> = ({
   currentTone,
   onChangeTone,
   displayName,
+  userEmail,
+  onSignOut,
+  onResetCleanSlate,
 }) => {
   const [showToneMenu, setShowToneMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const unreadCount = getNotifications().filter(n => !n.read).length;
 
   const toneOptions: Array<{ id: RealityTone; label: string; emoji: string }> = [
@@ -131,9 +138,52 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="sm:hidden">Add</span>
           </button>
 
-          {/* User Profile Avatar (Reference 2) */}
-          <div className="w-8 h-8 rounded-full bg-[#DCE7FA] border border-[#BACDF2] flex items-center justify-center text-xs font-bold text-[#2A4B82] shadow-sm select-none">
-            {displayName ? displayName.charAt(0).toUpperCase() : 'A'}
+          {/* User Profile Avatar with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-8 h-8 rounded-full bg-[#DCE7FA] border border-[#BACDF2] hover:ring-2 hover:ring-[#BACDF2] flex items-center justify-center text-xs font-bold text-[#2A4B82] shadow-sm select-none transition-all cursor-pointer"
+              title="User Account & Settings"
+            >
+              {displayName ? displayName.charAt(0).toUpperCase() : 'A'}
+            </button>
+
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#EDE8E0] shadow-card p-1.5 z-50 animate-in text-xs space-y-1">
+                  <div className="px-3 py-2 border-b border-[#EDE8E0]">
+                    <div className="font-bold text-[#181D26] truncate">{displayName || 'My Account'}</div>
+                    <div className="text-[10px] text-[#7F899F] truncate">{userEmail || 'Local Secure Vault'}</div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onResetCleanSlate?.();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl text-[#D4952B] hover:bg-[#FAF8F5] font-semibold flex items-center gap-2"
+                  >
+                    <span>✨</span>
+                    <span>Reset to Clean Slate (₹0)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onSignOut?.();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-xl text-[#E06D53] hover:bg-red-50 font-semibold flex items-center gap-2"
+                  >
+                    <span>🚪</span>
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

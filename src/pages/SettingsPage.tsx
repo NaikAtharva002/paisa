@@ -116,6 +116,13 @@ export const SettingsPage: React.FC = () => {
     a.click();
   };
 
+  const handleResetToCleanSlate = () => {
+    if (confirm('Reset PAISA to a 100% clean slate (₹0)? All transactions, accounts, and budgets will be cleared and you can onboard fresh.')) {
+      store.initializeCleanSlate(false);
+      window.location.reload();
+    }
+  };
+
   const handleDeleteAllData = () => {
     if (confirm('CAUTION: Are you sure you want to permanently delete all your financial records and reset Paisa?')) {
       store.clearAllData();
@@ -411,8 +418,22 @@ export const SettingsPage: React.FC = () => {
 
         <div className="pt-4 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-bold text-[#E06D53]">Reset All Financial Data</div>
-            <p className="text-[11px] text-[#7F899F]">Permanently erase local records and restart onboarding</p>
+            <div className="text-xs font-bold text-[#D4952B]">Reset to Clean State (₹0)</div>
+            <p className="text-[11px] text-[#7F899F]">Clear all cached transactions, accounts, and demo digits to restart clean onboarding</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetToCleanSlate}
+            className="px-4 py-2 rounded-full bg-[#FCF8EE] text-[#D4952B] border border-[#EBD7AF] hover:bg-[#FCEECB] text-xs font-bold transition-colors"
+          >
+            <span>✨ Reset to Clean Slate (₹0)</span>
+          </button>
+        </div>
+
+        <div className="pt-4 border-t border-[#EDE8E0] flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold text-[#E06D53]">Hard Reset All Data</div>
+            <p className="text-[11px] text-[#7F899F]">Permanently erase all local storage keys</p>
           </div>
           <button
             onClick={handleDeleteAllData}
