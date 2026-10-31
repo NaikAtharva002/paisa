@@ -423,7 +423,7 @@ export function App() {
       <Modal
         isOpen={isCsvImportOpen}
         onClose={() => setIsCsvImportOpen(false)}
-        title="Import Transactions from CSV Statement"
+        title="Import Bank Statement (Excel, PDF, CSV)"
         maxWidth="max-w-xl"
       >
         <CsvImportModal

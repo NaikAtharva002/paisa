@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Transaction } from '../../types';
 import { formatINR, isSpendingExpense } from '../../lib/calculations';
 import { store } from '../../lib/storage';
-import { exportTransactionsToCsv } from '../../lib/csvParser';
+import { exportTransactionsToCsv, exportTransactionsToExcel } from '../../lib/csvParser';
 import { showToast } from '../common/Toast';
 import {
   Search,
@@ -15,6 +15,9 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Filter,
+  FileSpreadsheet,
+  FileText,
+  ChevronDown,
 } from 'lucide-react';
 
 interface TransactionListProps {
@@ -35,6 +38,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'expense' | 'income' | 'this_month'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const now = new Date();
   const currentMonthPrefix = now.toISOString().slice(0, 7);
@@ -93,6 +97,19 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     });
   };
 
+  const handleExportExcel = () => {
+    const bytes = exportTransactionsToExcel(filtered);
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `paisa_transactions_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportMenu(false);
+  };
+
   const handleExportCsv = () => {
     const csv = exportTransactionsToCsv(filtered);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -103,6 +120,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setShowExportMenu(false);
   };
 
   // Helper for Reference 2 styled merchant avatar icons
@@ -171,19 +189,41 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             <button
               onClick={onOpenCsvImport}
               className="btn-secondary text-xs px-3.5 py-2"
-              title="Import CSV bank statement"
+              title="Import bank statement (Excel, PDF, CSV, JSON)"
             >
               <Upload className="w-3.5 h-3.5" />
               <span>Import</span>
             </button>
-            <button
-              onClick={handleExportCsv}
-              className="btn-secondary text-xs px-3.5 py-2"
-              title="Export CSV"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5"
+                title="Export transactions"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export</span>
+                <ChevronDown className="w-3 h-3 text-[#7F899F]" />
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-1.5 w-48 rounded-2xl bg-white border border-[#EDE8E0] shadow-xl p-1.5 z-30 animate-in">
+                  <button
+                    onClick={handleExportExcel}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#181D26] hover:bg-[#FAF8F5] flex items-center gap-2 transition-colors"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#2E8B57]" />
+                    <span>Export Excel (.xlsx)</span>
+                  </button>
+                  <button
+                    onClick={handleExportCsv}
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#181D26] hover:bg-[#FAF8F5] flex items-center gap-2 transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-[#D4952B]" />
+                    <span>Export CSV (.csv)</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={onAddTransaction}
               className="btn-primary text-xs px-4 py-2"
