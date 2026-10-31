@@ -51,6 +51,7 @@ export function App() {
   // Listen for changes in the store to re-render reactively
   const [, setTick] = useState(0);
   useEffect(() => {
+    authService.init();
     return subscribeToStore(() => setTick(t => t + 1));
   }, []);
 
