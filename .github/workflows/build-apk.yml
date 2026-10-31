@@ -38,10 +38,11 @@ jobs:
       - name: Grant Execute Permission to Gradle Wrapper
         run: chmod +x android/gradlew
 
-      - name: Configure Android SDK Path & Local Properties
+      - name: Configure Android SDK Path & Accept Licenses
         run: |
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           cat android/local.properties
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Copy Web Assets to Android Project
         run: |
