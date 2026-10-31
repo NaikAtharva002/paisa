@@ -11,14 +11,17 @@
     "floorplan": "node floorplan/serve.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
     "@supabase/supabase-js": "^2.46.1",
     "canvas-confetti": "^1.9.3",
     "clsx": "^2.1.1",
     "lucide-react": "^0.460.0",
-    "recharts": "^2.13.3",
-    "tailwind-merge": "^2.5.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3",
+    "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
