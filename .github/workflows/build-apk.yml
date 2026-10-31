@@ -53,8 +53,19 @@ jobs:
 
       - name: Build Android Debug APK
         run: |
+          set -o pipefail
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle_build.log
+
+      - name: Push Error Log to Debug Branch on Failure
+        if: failure()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -B debug-log
+          git add -f gradle_build.log
+          git commit -m "chore: gradle build failure log" || true
+          git push origin debug-log --force || true
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
