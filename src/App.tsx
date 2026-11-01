@@ -1,3 +1,4 @@
+import { upiTrackerBridge } from './lib/upiTrackerBridge';
 import React, { useState, useEffect } from 'react';
 import { store, subscribeToStore } from './lib/storage';
 import { NavTab, BottomNav } from './components/common/BottomNav';
@@ -52,6 +53,7 @@ export function App() {
   const [, setTick] = useState(0);
   useEffect(() => {
     authService.init();
+    upiTrackerBridge.init();
     return subscribeToStore(() => setTick(t => t + 1));
   }, []);
 
@@ -222,7 +224,7 @@ export function App() {
   }
 
   // 3. If landing page is active
-  if (showLanding) {
+  if (showLanding || !isOnboarded) {
     return (
       <LandingPage
         onGetStarted={() => {

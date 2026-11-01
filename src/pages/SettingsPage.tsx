@@ -1,9 +1,14 @@
+import { upiTrackerBridge, SUPPORTED_UPI_APPS } from '../lib/upiTrackerBridge';
 import React, { useState } from 'react';
 import { store } from '../lib/storage';
 import { BudgetingMode, RealityTone } from '../types';
 import { formatINR } from '../lib/calculations';
 import {
   Settings as SettingsIcon,
+  AlertCircle,
+  ShieldCheck,
+  BellRing,
+  Smartphone,
   Shield,
   Download,
   Upload,
@@ -43,6 +48,34 @@ export const SettingsPage: React.FC = () => {
 
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [activePublicPage, setActivePublicPage] = useState<PublicPageId | null>(null);
+
+    // Automatic UPI tracking state
+  const [isTracking, setIsTracking] = useState(upiTrackerBridge.isTrackingEnabled());
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [detectedCount, setDetectedCount] = useState(upiTrackerBridge.getStatus().detectedCount);
+  const [lastNotif, setLastNotif] = useState(upiTrackerBridge.getStatus().lastProcessedNotification || '');
+
+  React.useEffect(() => {
+    upiTrackerBridge.checkPermission().then(granted => setPermissionGranted(granted));
+  }, []);
+
+  const handleToggleTracking = async () => {
+    const next = !isTracking;
+    await upiTrackerBridge.setTrackingEnabled(next);
+    setIsTracking(next);
+    if (next && !permissionGranted) {
+      await upiTrackerBridge.openPermissionSettings();
+      const granted = await upiTrackerBridge.checkPermission();
+      setPermissionGranted(granted);
+    }
+    showToast(next ? 'Automatic transaction tracking enabled' : 'Transaction tracking paused', 'info');
+  };
+
+  const handleOpenPermissionSettings = async () => {
+    await upiTrackerBridge.openPermissionSettings();
+    const granted = await upiTrackerBridge.checkPermission();
+    setPermissionGranted(granted);
+  };
 
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     return (localStorage.getItem('paisa_theme') as 'light' | 'dark' | 'system') || 'system';
@@ -374,6 +407,91 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Automatic UPI & Banking Transaction Tracking */}
+      <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#FCF8EE] border border-[#EBD7AF] flex items-center justify-center text-[#D4952B]">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#181D26]">Automatic Transaction Tracking</h3>
+              <p className="text-xs text-[#7F899F]">Real-time UPI & bank notification detection</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+              permissionGranted
+                ? 'bg-[#EBF7EE] text-[#2E8B57] border-[#CDE5D7]'
+                : 'bg-[#FEF8EA] text-[#D4952B] border-[#FCEECB]'
+            }`}>
+              {permissionGranted ? 'Permission Active' : 'Access Required'}
+            </span>
+
+            <button
+              type="button"
+              onClick={handleToggleTracking}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                isTracking ? 'bg-[#2E8B57]' : 'bg-[#D1D5DB]'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  isTracking ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <p className="text-xs text-[#5E687D] leading-relaxed">
+          Automatically reads incoming and outgoing payment notifications from Google Pay, PhonePe, Paytm, BHIM, and your mobile banking apps, converting them instantly into encrypted transaction records.
+        </p>
+
+        {!permissionGranted && (
+          <div className="p-3.5 rounded-2xl bg-[#FEF8EA] border border-[#FCEECB] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-[#D4952B] shrink-0" />
+              <span className="text-xs font-semibold text-[#8C6218]">Notification Listener permission is required to detect payments</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleOpenPermissionSettings}
+              className="px-3 py-1.5 rounded-xl bg-[#D4952B] text-white text-xs font-bold hover:bg-[#B87D1B] transition-colors shrink-0"
+            >
+              Open Settings
+            </button>
+          </div>
+        )}
+
+        {/* Privacy & Security Guarantee */}
+        <div className="p-3.5 rounded-2xl bg-[#F8FAF9] border border-[#E2EBE5] flex items-start gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-[#2E8B57] shrink-0 mt-0.5" />
+          <div className="text-[11px] text-[#4A5D52] leading-snug">
+            <span className="font-bold">Strict Privacy Protection:</span> PAISA operates locally on your device. OTPs, passwords, ATM PINs, and personal messages are automatically detected by regex and discarded before touching any database.
+          </div>
+        </div>
+
+        {/* Supported Apps Badges */}
+        <div>
+          <div className="text-[11px] font-bold text-[#7F899F] uppercase tracking-wider mb-2">Supported Payment Apps</div>
+          <div className="flex flex-wrap gap-1.5">
+            {SUPPORTED_UPI_APPS.map(app => (
+              <span key={app} className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#EDE8E0] text-[#3D4658]">
+                {app}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Detected stats */}
+        <div className="pt-2 border-t border-[#EDE8E0] flex items-center justify-between text-xs text-[#7F899F]">
+          <span>Payments detected via notifications: <strong className="text-[#181D26]">{detectedCount}</strong></span>
+          {lastNotif && <span className="text-[11px] truncate max-w-xs">Last: {lastNotif}</span>}
+        </div>
+      </div>
 
       {/* Data Backup & Danger Zone */}
       <div className="p-6 rounded-3xl bg-white border border-[#EDE8E0] shadow-card space-y-4">

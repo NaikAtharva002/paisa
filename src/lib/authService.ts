@@ -351,8 +351,8 @@ export const authService = {
     // Local / Offline Simulation for Google Sign-In
     const googleUser: AuthUser = {
       id: `usr_google_${Date.now()}`,
-      email: 'atharva.google@example.com',
-      display_name: 'Atharva Naik',
+      email: 'user.google@paisa.money',
+      display_name: 'Google User',
       auth_provider: 'google',
       created_at: new Date().toISOString(),
     };

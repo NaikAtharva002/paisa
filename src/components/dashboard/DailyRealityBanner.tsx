@@ -82,7 +82,7 @@ export const DailyRealityBanner: React.FC<DailyRealityBannerProps> = ({ report, 
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <h1 className="text-3xl sm:text-4xl font-black text-[#181D26] tracking-tight">
-              {displayName || 'Atharva'}
+              {displayName || 'Friend'}
             </h1>
             <span className="text-[#D4952B] text-xl">✨</span>
           </div>
