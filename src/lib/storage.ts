@@ -505,11 +505,23 @@ export const store = {
   // Initialization check with Clean Slate Auto-Migration
   init() {
     if (typeof localStorage !== 'undefined') {
-      const hasCleanSlateEnforced = localStorage.getItem('paisa_clean_slate_enforced_v2');
-      if (!hasCleanSlateEnforced) {
-        // Enforce clean slate migration for existing browser storage: purge any legacy demo data!
-        this.initializeCleanSlate(false);
-        localStorage.setItem('paisa_clean_slate_enforced_v2', 'true');
+      const hasCleanSlateEnforcedV3 = localStorage.getItem('paisa_clean_slate_enforced_v3');
+      if (!hasCleanSlateEnforcedV3) {
+        // Enforce clean slate migration for existing browser storage: purge any legacy demo budgets!
+        const currentBudgets = getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
+        const isLegacyDemoBudgets =
+          currentBudgets['cat_food'] === 12000 &&
+          currentBudgets['cat_groceries'] === 15000 &&
+          currentBudgets['cat_shopping'] === 8000;
+        
+        if (isLegacyDemoBudgets) {
+          setStored(STORAGE_KEYS.BUDGETS, {});
+        }
+
+        if (!localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
+          this.initializeCleanSlate(false);
+        }
+        localStorage.setItem('paisa_clean_slate_enforced_v3', 'true');
       } else if (!localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
         this.initializeCleanSlate(false);
       }
@@ -767,17 +779,43 @@ export const store = {
 
   // Budgets
   getCategoryBudgets(): Record<string, number> {
-    return getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
+    const raw = getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
+    const clean: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === 'number' && v > 0) {
+        clean[k] = v;
+      }
+    }
+    return clean;
   },
 
   updateCategoryBudget(categoryId: string, limit: number): void {
-    const current = this.getCategoryBudgets();
-    const updated = { ...current, [categoryId]: Math.max(0, limit) };
+    const current = getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
+    if (isNaN(limit) || limit <= 0) {
+      const updated = { ...current };
+      delete updated[categoryId];
+      setStored(STORAGE_KEYS.BUDGETS, updated);
+      return;
+    }
+    const updated = { ...current, [categoryId]: Math.round(limit) };
+    setStored(STORAGE_KEYS.BUDGETS, updated);
+  },
+
+  deleteCategoryBudget(categoryId: string): void {
+    const current = getStored<Record<string, number>>(STORAGE_KEYS.BUDGETS, {});
+    const updated = { ...current };
+    delete updated[categoryId];
     setStored(STORAGE_KEYS.BUDGETS, updated);
   },
 
   setCategoryBudgets(budgets: Record<string, number>): void {
-    setStored(STORAGE_KEYS.BUDGETS, budgets);
+    const clean: Record<string, number> = {};
+    for (const [k, v] of Object.entries(budgets)) {
+      if (typeof v === 'number' && v > 0) {
+        clean[k] = Math.round(v);
+      }
+    }
+    setStored(STORAGE_KEYS.BUDGETS, clean);
   },
 
   // Categories
