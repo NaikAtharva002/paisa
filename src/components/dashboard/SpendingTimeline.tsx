@@ -1,3 +1,4 @@
+import { formatTransactionTitle } from '../../lib/transactionIntelligence';
 import React from 'react';
 import { Transaction } from '../../types';
 import { formatINR, isSpendingExpense } from '../../lib/calculations';
@@ -99,7 +100,7 @@ export const SpendingTimeline: React.FC<SpendingTimelineProps> = ({
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                      <span>{item.tx.merchant}</span>
+                      <span>{formatTransactionTitle(item.tx, store.getPeople()).title}</span>
                       <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/60">
                         {categoryName}
                       </span>

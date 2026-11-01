@@ -129,7 +129,7 @@ export const store = {
   // Initialization check with Clean Slate Auto-Migration
   init() {
     if (typeof localStorage !== 'undefined') {
-      const isCleanSlateEnforcedV8 = localStorage.getItem('paisa_clean_slate_v8_enforced');
+      const isCleanSlateEnforcedV9 = localStorage.getItem('paisa_clean_slate_v9_enforced');
       const rawUser = localStorage.getItem(STORAGE_KEYS.USER) || '';
       const rawAccounts = localStorage.getItem(STORAGE_KEYS.ACCOUNTS) || '';
       const rawTxs = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '';
@@ -140,6 +140,8 @@ export const store = {
         rawUser.includes('atharva@example.com') ||
         rawAccounts.includes('acc_hdfc_1') ||
         rawAccounts.includes('acc_icici_1') ||
+        rawAccounts.includes('acc_sbi_cc') ||
+        rawAccounts.includes('SBI SimplyCLICK') ||
         rawAccounts.includes('is_demo') ||
         rawTxs.includes('tx_today_1') ||
         rawTxs.includes('Blue Tokai') ||
@@ -150,10 +152,10 @@ export const store = {
         this.initializeCleanSlate(false);
         localStorage.removeItem('paisa_auth_session');
         localStorage.removeItem('paisa_clean_slate_enforced_v3');
-        localStorage.setItem('paisa_clean_slate_v8_enforced', 'true');
-      } else if (!isCleanSlateEnforcedV8 && !localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
+        localStorage.setItem('paisa_clean_slate_v9_enforced', 'true');
+      } else if (!isCleanSlateEnforcedV9 && !localStorage.getItem(STORAGE_KEYS.ONBOARDED)) {
         this.initializeCleanSlate(false);
-        localStorage.setItem('paisa_clean_slate_v8_enforced', 'true');
+        localStorage.setItem('paisa_clean_slate_v9_enforced', 'true');
       }
     }
   },

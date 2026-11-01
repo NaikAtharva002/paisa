@@ -1,3 +1,4 @@
+import { formatTransactionTitle } from '../../lib/transactionIntelligence';
 import React, { useState, useMemo } from 'react';
 import { Transaction, Account, Category } from '../../types';
 import { formatINR, toPaise, fromPaise } from '../../lib/calculations';
@@ -926,7 +927,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   const isIncome = tx.transaction_type === 'income';
                   const isTransfer = tx.transaction_type === 'transfer' || tx.is_internal_transfer;
                   const isNeedsReview = !tx.category_id || tx.category_id === 'cat_other';
-                  const identity = resolveIdentity(tx);
+                  const titleInfo = formatTransactionTitle(tx, people);
                   const categoryName = catMap.get(tx.category_id)?.name || 'Uncategorized';
                   const account = tx.account_id ? accountMap.get(tx.account_id) : undefined;
 
@@ -942,18 +943,20 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       onClick={() => setSelectedTxForDetail(tx)}
                       className="p-3.5 sm:p-4 hover:bg-[#FAF8F5]/80 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
                     >
-                      {/* LEFT: Contextual Icon + Identity + Secondary Metadata */}
+                      {/* LEFT: Contextual Icon + Prominent Sender/Recipient Title + Secondary Metadata */}
                       <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 flex-1">
                         {getTransactionIcon(tx, isIncome, !!isTransfer, isNeedsReview)}
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm font-bold text-[#181D26] truncate">
-                              {identity.name}
+                            <span className={`text-xs sm:text-sm font-bold truncate ${
+                              titleInfo.isUnknown ? 'text-[#7F899F] italic font-semibold' : 'text-[#181D26]'
+                            }`}>
+                              {titleInfo.title}
                             </span>
-                            {identity.subtitle && (
-                              <span className="text-[10px] font-semibold text-[#7F899F] bg-slate-100 px-1.5 py-0.2 rounded-sm hidden sm:inline">
-                                {identity.subtitle}
+                            {titleInfo.subtitle && (
+                              <span className="text-[10px] font-semibold text-[#7F899F] bg-slate-100 px-1.5 py-0.5 rounded-md hidden sm:inline">
+                                {titleInfo.subtitle}
                               </span>
                             )}
                           </div>

@@ -703,3 +703,246 @@ export function answerFinancialQuestion(
     confidence: 0.80,
   };
 }
+
+
+// ----------------------------------------------------------------------
+// Section: Transaction Row Prominent Sender/Recipient Title Formatter
+// ----------------------------------------------------------------------
+
+export interface TransactionTitleInfo {
+  title: string;
+  prefix: string;
+  rawName: string;
+  isUnknown: boolean;
+  subtitle?: string;
+}
+
+const GENERIC_IDENTIFIERS = new Set([
+  'unknown',
+  'unknown merchant',
+  'unknown recipient',
+  'unknown sender',
+  'unknown transaction',
+  'transaction',
+  'transactions',
+  'expense',
+  'income',
+  'payment',
+  'payments',
+  'debit',
+  'credit',
+  'transfer',
+  'transfers',
+  'upi',
+  'upi payment',
+  'net banking',
+  'debit card',
+  'credit card',
+  'cash',
+  'pos',
+  'atm',
+  'statement',
+  'others',
+  'other',
+  'misc',
+  'miscellaneous',
+  'na',
+  'null',
+  'undefined',
+  'general',
+  'self',
+]);
+
+export function isValidCounterpartyName(val?: string | null): boolean {
+  if (!val) return false;
+  const trimmed = val.trim();
+  if (trimmed.length < 2) return false;
+
+  // Reject generic terms
+  if (GENERIC_IDENTIFIERS.has(trimmed.toLowerCase())) return false;
+
+  // Reject date formats: '2026-10-31', '31/10/2026', '24-Oct-26', 'Oct 31, 2026', '2026-10'
+  if (/^\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4}$/.test(trimmed)) return false;
+  if (/^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*(\s+\d{2,4})?$/i.test(trimmed)) return false;
+  if (/^\d{1,2}[-/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-/]\d{2,4}$/i.test(trimmed)) return false;
+
+  // Reject pure numbers or raw bank reference strings (e.g. '492019482910', 'XX4921', '*4921')
+  if (/^(\*+|XX+)?\d+$/i.test(trimmed)) return false;
+  if (/^[A-Z0-9]{12,}$/i.test(trimmed)) return false;
+
+  return true;
+}
+
+export function extractCounterpartyName(
+  tx: { merchant?: string; description?: string; notes?: string; transaction_type?: string },
+  peopleDirectory: PersonEntity[] = []
+): { name: string; isUnknown: boolean; subtitle?: string } {
+  const rawMerchant = (tx.merchant || '').trim();
+  const rawDesc = (tx.description || '').trim();
+  const rawNotes = (tx.notes || '').trim();
+  const combined = `${rawMerchant} ${rawDesc} ${rawNotes}`;
+
+  // 1. Check user-confirmed People Directory
+  if (peopleDirectory.length > 0) {
+    const matchedPerson = peopleDirectory.find(p => {
+      const pName = p.display_name.toLowerCase();
+      if (rawMerchant.toLowerCase() === pName) return true;
+      if (p.aliases?.some(a => rawMerchant.toLowerCase().includes(a.toLowerCase()))) return true;
+      if (p.upi_vpa && combined.toLowerCase().includes(p.upi_vpa.toLowerCase())) return true;
+      return false;
+    });
+
+    if (matchedPerson && isValidCounterpartyName(matchedPerson.display_name)) {
+      return {
+        name: matchedPerson.display_name,
+        isUnknown: false,
+        subtitle: matchedPerson.relationship ? matchedPerson.relationship.replace(/_/g, ' ') : undefined,
+      };
+    }
+  }
+
+  // 2. Extract from explicit merchant if valid
+  if (isValidCounterpartyName(rawMerchant)) {
+    // Strip common prefixes if present in merchant name
+    const cleaned = rawMerchant
+      .replace(/^(paid to|payment to|payment of [^to]+ to|sent to|received from|transfer to|transfer from|refund from|by upi:?|by upi to)\s+/i, '')
+      .replace(/[.:;,-]+$/g, '')
+      .trim();
+
+    if (isValidCounterpartyName(cleaned)) {
+      return { name: cleaned, isUnknown: false };
+    }
+  }
+
+  // 3. Extract from description or notes using payment patterns
+  // Pattern A: 'Paid to [Recipient]' or 'Sent to [Recipient]' or 'Payment of ₹X to [Recipient]'
+  const paidMatch = combined.match(/(?:paid|sent|payment(?:\s+of\s+[^to]+)?)\s+to\s+([A-Za-z0-9 &._-]{2,40}?)(?:\s+(?:was\s+successful|successful|via|using|upi|ref|utr|rrn|txn|bal|\.|\$))/i);
+  if (paidMatch && isValidCounterpartyName(paidMatch[1])) {
+    return { name: paidMatch[1].trim(), isUnknown: false };
+  }
+
+  // Pattern B: 'Received from [Sender]' or 'Credited by [Sender]' or 'Transfer from [Sender]'
+  const receivedMatch = combined.match(/(?:received|transfer|credited)\s+(?:from|by)\s+([A-Za-z0-9 &._-]{2,40}?)(?:\s+(?:using|via|ref|utr|rrn|at|credited|\.|\$|\s+[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+))/i);
+  if (receivedMatch && isValidCounterpartyName(receivedMatch[1])) {
+    return { name: receivedMatch[1].trim(), isUnknown: false };
+  }
+
+  // Pattern C: Bank SMS 'by UPI: [Recipient]'
+  const bankUpiMatch = combined.match(/by\s+UPI(?::|\s+to)?\s*([A-Za-z0-9 &._-]{2,40}?)(?:\s+(?:Ref|Bal|on|Avail|\.|\$))/i);
+  if (bankUpiMatch && isValidCounterpartyName(bankUpiMatch[1])) {
+    return { name: bankUpiMatch[1].trim(), isUnknown: false };
+  }
+
+  // Pattern D: UPI Narration 'UPI/DR/123456/Rahul Verma/...' or 'UPI/CR/123456/Swiggy/...'
+  const upiNarrationMatch = combined.match(/UPI\/(?:CR|DR)?\/?(?:[0-9]+\/)?([A-Za-z0-9 ._-]{3,35})\//i);
+  if (upiNarrationMatch && isValidCounterpartyName(upiNarrationMatch[1])) {
+    const cleaned = upiNarrationMatch[1].replace(/[_-]/g, ' ').trim();
+    if (isValidCounterpartyName(cleaned)) {
+      return { name: cleaned, isUnknown: false };
+    }
+  }
+
+  // Pattern E: Cleaned Bank Narration
+  if (rawDesc) {
+    const cleanedDesc = rawDesc
+      .replace(/^(POS|UPI|NEFT|RTGS|IMPS|INB|ATM|BIL|ACH)\/?[A-Z0-9]*\/?/i, '')
+      .replace(/\b(CR|DR|INR|Rs\.?|Bal|Ref|No|Txn)\b/gi, '')
+      .replace(/\d{6,}/g, '')
+      .replace(/XX\d{4}/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (isValidCounterpartyName(cleanedDesc)) {
+      return { name: cleanedDesc, isUnknown: false };
+    }
+  }
+
+  return { name: '', isUnknown: true };
+}
+
+export function formatTransactionTitle(
+  tx: Transaction,
+  peopleDirectory: PersonEntity[] = []
+): TransactionTitleInfo {
+  const isIncome = tx.transaction_type === 'income';
+  const isRefund = tx.transaction_type === 'refund';
+  const isTransfer = tx.transaction_type === 'transfer' || !!tx.is_internal_transfer;
+
+  const { name, isUnknown, subtitle } = extractCounterpartyName(tx, peopleDirectory);
+
+  if (isIncome) {
+    if (!isUnknown && name) {
+      return {
+        title: `Received from ${name}`,
+        prefix: 'Received from',
+        rawName: name,
+        isUnknown: false,
+        subtitle,
+      };
+    }
+    return {
+      title: 'Unknown sender',
+      prefix: 'Received from',
+      rawName: '',
+      isUnknown: true,
+      subtitle,
+    };
+  }
+
+  if (isRefund) {
+    if (!isUnknown && name) {
+      return {
+        title: `Refund from ${name}`,
+        prefix: 'Refund from',
+        rawName: name,
+        isUnknown: false,
+        subtitle,
+      };
+    }
+    return {
+      title: 'Unknown sender',
+      prefix: 'Refund from',
+      rawName: '',
+      isUnknown: true,
+      subtitle,
+    };
+  }
+
+  if (isTransfer) {
+    if (!isUnknown && name) {
+      return {
+        title: `Transferred to ${name}`,
+        prefix: 'Transferred to',
+        rawName: name,
+        isUnknown: false,
+        subtitle,
+      };
+    }
+    return {
+      title: tx.is_internal_transfer ? 'Transfer between accounts' : 'Unknown recipient',
+      prefix: 'Transferred to',
+      rawName: '',
+      isUnknown: true,
+      subtitle,
+    };
+  }
+
+  // Default: Outgoing expense
+  if (!isUnknown && name) {
+    return {
+      title: `Paid to ${name}`,
+      prefix: 'Paid to',
+      rawName: name,
+      isUnknown: false,
+      subtitle,
+    };
+  }
+
+  return {
+    title: 'Unknown recipient',
+    prefix: 'Paid to',
+    rawName: '',
+    isUnknown: true,
+    subtitle,
+  };
+}

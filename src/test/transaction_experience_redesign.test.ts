@@ -35,6 +35,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { store } from '../lib/storage';
 import { Transaction } from '../types';
 import { toPaise, fromPaise, formatINR } from '../lib/calculations';
+import { formatTransactionTitle, extractCounterpartyName, isValidCounterpartyName } from '../lib/transactionIntelligence';
 
 describe('PAISA Transaction Experience Redesign Verification Suite', () => {
   beforeEach(() => {
@@ -223,6 +224,197 @@ describe('PAISA Transaction Experience Redesign Verification Suite', () => {
 
       const people = store.getPeople();
       expect(people.length).toBe(0);
+    });
+  });
+
+  describe('5. Sender/Recipient Prominent Title Formatting', () => {
+    it('formats outgoing expense with merchant as "Paid to [Merchant]"', () => {
+      const tx: Transaction = {
+        id: 'tx_swiggy',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T12:00:00',
+        merchant: 'Swiggy',
+        amount: 350,
+        transaction_type: 'expense',
+        category_id: 'cat_food',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(tx);
+      expect(titleInfo.title).toBe('Paid to Swiggy');
+      expect(titleInfo.rawName).toBe('Swiggy');
+      expect(titleInfo.isUnknown).toBe(false);
+    });
+
+    it('formats outgoing expense to person as "Paid to [Person]"', () => {
+      const people = [
+        {
+          id: 'person_rahul',
+          user_id: 'usr_me',
+          display_name: 'Rahul Sharma',
+          relationship: 'friend' as any,
+          default_category_id: 'cat_transfers',
+          aliases: ['rahul'],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      const tx: Transaction = {
+        id: 'tx_rahul_out',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T14:00:00',
+        merchant: 'Rahul',
+        amount: 1500,
+        transaction_type: 'expense',
+        category_id: 'cat_transfers',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(tx, people);
+      expect(titleInfo.title).toBe('Paid to Rahul Sharma');
+      expect(titleInfo.rawName).toBe('Rahul Sharma');
+      expect(titleInfo.isUnknown).toBe(false);
+    });
+
+    it('formats incoming payment from person as "Received from [Person]"', () => {
+      const tx: Transaction = {
+        id: 'tx_rahul_in',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T15:00:00',
+        merchant: 'Rahul Verma',
+        amount: 2000,
+        transaction_type: 'income',
+        category_id: 'cat_income',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(tx);
+      expect(titleInfo.title).toBe('Received from Rahul Verma');
+      expect(titleInfo.rawName).toBe('Rahul Verma');
+      expect(titleInfo.isUnknown).toBe(false);
+    });
+
+    it('falls back to "Unknown recipient" when counterparty is unavailable for outgoing payment', () => {
+      const tx: Transaction = {
+        id: 'tx_anon_out',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T16:00:00',
+        merchant: '',
+        description: '',
+        amount: 500,
+        transaction_type: 'expense',
+        category_id: 'cat_other',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(tx);
+      expect(titleInfo.title).toBe('Unknown recipient');
+      expect(titleInfo.isUnknown).toBe(true);
+    });
+
+    it('falls back to "Unknown sender" when counterparty is unavailable for incoming payment', () => {
+      const tx: Transaction = {
+        id: 'tx_anon_in',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T17:00:00',
+        merchant: '',
+        description: '',
+        amount: 1000,
+        transaction_type: 'income',
+        category_id: 'cat_income',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(tx);
+      expect(titleInfo.title).toBe('Unknown sender');
+      expect(titleInfo.isUnknown).toBe(true);
+    });
+
+    it('strictly rejects dates and generic labels from being treated as names', () => {
+      expect(isValidCounterpartyName('2026-10-31')).toBe(false);
+      expect(isValidCounterpartyName('31/10/2026')).toBe(false);
+      expect(isValidCounterpartyName('24-Oct-26')).toBe(false);
+      expect(isValidCounterpartyName('Expense')).toBe(false);
+      expect(isValidCounterpartyName('Payment')).toBe(false);
+      expect(isValidCounterpartyName('Transaction')).toBe(false);
+      expect(isValidCounterpartyName('Debit')).toBe(false);
+
+      const txWithDateMerchant: Transaction = {
+        id: 'tx_date_merch',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T18:00:00',
+        merchant: '2026-10-31',
+        amount: 250,
+        transaction_type: 'expense',
+        category_id: 'cat_other',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(txWithDateMerchant);
+      expect(titleInfo.title).toBe('Unknown recipient');
+      expect(titleInfo.isUnknown).toBe(true);
+    });
+
+    it('extracts recipient name from complex UPI description narrations', () => {
+      const txUpi: Transaction = {
+        id: 'tx_upi_desc',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T19:00:00',
+        merchant: '',
+        description: 'UPI/DR/492019482910/Rahul Verma/State Bank/Payment',
+        amount: 1200,
+        transaction_type: 'expense',
+        category_id: 'cat_transfers',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(txUpi);
+      expect(titleInfo.title).toBe('Paid to Rahul Verma');
+      expect(titleInfo.rawName).toBe('Rahul Verma');
+      expect(titleInfo.isUnknown).toBe(false);
+    });
+
+    it('formats refunds as "Refund from [Merchant]"', () => {
+      const txRefund: Transaction = {
+        id: 'tx_refund_swiggy',
+        user_id: 'usr_me',
+        account_id: 'acc_1',
+        transaction_date: '2026-10-31T20:00:00',
+        merchant: 'Swiggy',
+        amount: 250,
+        transaction_type: 'refund',
+        category_id: 'cat_food',
+        payment_method: 'UPI',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const titleInfo = formatTransactionTitle(txRefund);
+      expect(titleInfo.title).toBe('Refund from Swiggy');
+      expect(titleInfo.rawName).toBe('Swiggy');
+      expect(titleInfo.isUnknown).toBe(false);
     });
   });
 });

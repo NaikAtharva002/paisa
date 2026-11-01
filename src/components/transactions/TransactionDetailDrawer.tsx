@@ -1,3 +1,4 @@
+import { formatTransactionTitle } from '../../lib/transactionIntelligence';
 import React, { useState } from 'react';
 import { Transaction, Account, Category } from '../../types';
 import { formatINR } from '../../lib/calculations';
@@ -60,6 +61,7 @@ export const TransactionDetailDrawer: React.FC<TransactionDetailDrawerProps> = (
   const accountMap = new Map(accounts.map(a => [a.id, a]));
   const linkedAccount = transaction.account_id ? accountMap.get(transaction.account_id) : undefined;
 
+  const titleInfo = formatTransactionTitle(transaction, store.getPeople());
   const isIncome = transaction.transaction_type === 'income';
   const isTransfer = transaction.transaction_type === 'transfer' || transaction.is_internal_transfer;
   const isNeedsReview = !transaction.category_id || transaction.category_id === 'cat_other';
@@ -222,8 +224,10 @@ export const TransactionDetailDrawer: React.FC<TransactionDetailDrawerProps> = (
               >
                 {isIncome ? '+' : isTransfer ? '⇄ ' : '-'}{formatINR(transaction.amount)}
               </div>
-              <div className="text-base font-bold text-[#181D26] mt-2">
-                {transaction.merchant || 'Unknown Transaction'}
+              <div className={`text-base font-bold mt-2 ${
+                titleInfo.isUnknown ? 'text-[#7F899F] italic font-semibold' : 'text-[#181D26]'
+              }`}>
+                {titleInfo.title}
               </div>
               <div className="text-xs text-[#7F899F] flex items-center justify-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
