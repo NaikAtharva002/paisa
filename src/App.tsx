@@ -244,7 +244,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#181D26] flex flex-row selection:bg-[#F0D49C] selection:text-[#181D26]">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#0F141C] flex flex-row selection:bg-[#0F141C] selection:text-[#0F141C]">
       {/* Skip to Main Content (Accessibility) */}
       <a
         href="#main-content"
@@ -260,7 +260,7 @@ export function App() {
       />
 
       {/* ── 2. Main Content Viewport ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#FAF8F5]">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#F8F9FA]">
         {/* Top Header */}
         <Header
           onOpenAddExpense={() => {
@@ -355,7 +355,7 @@ export function App() {
               <div className="w-14 h-14 rounded-2xl bg-[#FCF8EE] border border-[#EBD7AF] flex items-center justify-center text-[#D4952B] mx-auto text-xl font-black">
                 404
               </div>
-              <h3 className="text-lg font-bold text-[#181D26]">Screen Not Found</h3>
+              <h3 className="text-lg font-bold text-[#0F141C]">Screen Not Found</h3>
               <p className="text-xs text-[#7F899F]">The section you are trying to view does not exist or has been relocated.</p>
               <button
                 onClick={() => handleSelectTab('dashboard')}
@@ -386,7 +386,7 @@ export function App() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[#EDE8E0] pb-3">
-              <span className="font-extrabold text-base text-[#181D26]">More Features</span>
+              <span className="font-extrabold text-base text-[#0F141C]">More Features</span>
               <button
                 onClick={() => setIsMobileMoreOpen(false)}
                 className="p-1 rounded-full text-slate-400 hover:text-slate-800"
@@ -395,13 +395,13 @@ export function App() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs font-bold text-[#181D26]">
+            <div className="grid grid-cols-2 gap-3 text-xs font-bold text-[#0F141C]">
               <button
                 onClick={() => {
                   handleSelectTab('recurring');
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
+                className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
               >
                 <CalendarDays className="w-6 h-6 text-[#D4952B]" />
                 <span>Bills & Subs</span>
@@ -412,7 +412,7 @@ export function App() {
                   handleSelectTab('analytics');
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
+                className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
               >
                 <PieChart className="w-6 h-6 text-[#2E8B57]" />
                 <span>Analytics</span>
@@ -423,7 +423,7 @@ export function App() {
                   handleSelectTab('insights');
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
+                className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
               >
                 <Sparkles className="w-6 h-6 text-[#8B5CF6]" />
                 <span>AI Insights</span>
@@ -434,7 +434,7 @@ export function App() {
                   handleSelectTab('bank');
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
+                className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] flex flex-col items-center gap-2 hover:border-[#DFD7C7]"
               >
                 <Landmark className="w-6 h-6 text-[#3B82F6]" />
                 <span>Accounts Sync</span>
@@ -446,7 +446,7 @@ export function App() {
                 handleSelectTab('settings');
                 setIsMobileMoreOpen(false);
               }}
-              className="w-full py-3 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] text-xs font-bold text-[#181D26] flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] text-xs font-bold text-[#0F141C] flex items-center justify-center gap-2"
             >
               <SettingsIcon className="w-4 h-4 text-[#7F899F]" />
               <span>Settings & Calibration</span>

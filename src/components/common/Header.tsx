@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Sparkles, Leaf, Shield } from 'lucide-react';
+import { Plus, Bell, Search, Sparkles } from 'lucide-react';
 import { RealityTone } from '../../types';
 import { getNotifications } from '../../lib/notifications';
 import { SyncStatusBadge } from './SyncStatusBadge';
@@ -41,34 +41,33 @@ export const Header: React.FC<HeaderProps> = ({
   const activeTone = toneOptions.find(t => t.id === currentTone);
 
   return (
-    <header className="sticky top-0 z-20 w-full bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#EDE8E0] px-4 sm:px-8 py-3.5 transition-all">
+    <header className="sticky top-0 z-20 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        
         {/* Mobile Brand / Desktop Search */}
         <div className="flex items-center gap-3 flex-1 max-w-md">
           {/* Mobile PAISA Logo */}
           <div className="flex lg:hidden items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#D4952B] to-[#B87D1E] flex items-center justify-center text-white shadow-sm">
-              <Leaf className="w-4 h-4 fill-white" />
+            <div className="w-8 h-8 rounded-lg bg-[#0F141C] flex items-center justify-center text-white">
+              <span className="font-bold text-xs">₹</span>
             </div>
-            <span className="font-extrabold text-base tracking-wider text-[#181D26]">PAISA</span>
+            <span className="font-bold text-base tracking-tight text-[#0F141C]">PAISA</span>
           </div>
 
-          {/* Desktop Search Bar (Reference 2) */}
+          {/* Desktop Search Bar */}
           <div
             onClick={onOpenSearch}
             className="hidden lg:flex items-center relative w-full cursor-pointer group"
           >
-            <Search className="w-4 h-4 text-[#7F899F] group-hover:text-[#D4952B] absolute left-3.5 transition-colors" />
+            <Search className="w-4 h-4 text-slate-400 group-hover:text-[#0F141C] absolute left-3.5 transition-colors" />
             <input
               type="text"
               readOnly
               onClick={onOpenSearch}
-              placeholder="Search anything... (transactions, budgets, merchants)"
-              className="w-full pl-9 pr-12 py-2 rounded-full bg-white border border-[#EDE8E0] text-xs text-[#181D26] placeholder-[#A4ADC0] group-hover:border-[#D4952B] shadow-sm cursor-pointer transition-colors"
+              placeholder="Search transactions, budgets, categories..."
+              className="w-full pl-9 pr-12 py-2 rounded-full bg-slate-50 border border-slate-200 text-xs text-[#0F141C] placeholder-slate-400 group-hover:border-slate-300 shadow-xs cursor-pointer transition-colors focus:outline-none"
             />
-            <span className="absolute right-3 text-[10px] font-mono-num font-semibold text-[#7F899F] bg-[#F5F2EB] px-1.5 py-0.5 rounded border border-[#EDE8E0]">
-              ⌘K /
+            <span className="absolute right-3 text-[10px] font-mono font-semibold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+              ⌘K
             </span>
           </div>
         </div>
@@ -82,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative hidden md:block">
             <button
               onClick={() => setShowToneMenu(!showToneMenu)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EDE8E0] text-xs font-medium text-[#3D4658] hover:border-[#DFD7C7] shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-medium text-slate-700 hover:border-slate-300 shadow-xs transition-all active:scale-[0.98]"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#D4952B]" />
               <span>{activeTone?.emoji} {activeTone?.label}</span>
@@ -90,9 +89,9 @@ export const Header: React.FC<HeaderProps> = ({
             {showToneMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowToneMenu(false)} />
-                <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl border border-[#EDE8E0] shadow-floating py-1.5 z-50">
-                  <div className="px-3 py-1.5 section-title border-b border-[#EDE8E0] mb-1">
-                    Reality Check Tone
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl border border-slate-200 shadow-lg py-1.5 z-50">
+                  <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 mb-1">
+                    Reality check tone
                   </div>
                   {toneOptions.map(t => (
                     <button
@@ -103,8 +102,8 @@ export const Header: React.FC<HeaderProps> = ({
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors ${
                         currentTone === t.id
-                          ? 'text-[#D4952B] font-bold bg-[#FFF6E6]'
-                          : 'text-[#3D4658] hover:bg-[#FAF8F5]'
+                          ? 'text-[#0F141C] font-bold bg-slate-100'
+                          : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       <span>{t.emoji}</span>
@@ -119,74 +118,68 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Notifications Bell */}
           <button
             onClick={onOpenNotifications}
-            className="btn-icon relative"
+            className="relative p-2 rounded-full text-slate-600 hover:text-[#0F141C] hover:bg-slate-100 active:scale-[0.98] transition-all"
             title="Notifications"
           >
-            <Bell className="w-4 h-4 text-[#3D4658]" />
+            <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
-              <span className="absolute 1 top-1.5 right-1.5 w-2 h-2 bg-[#E06D53] rounded-full ring-2 ring-white" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#E11D48] ring-2 ring-white" />
             )}
           </button>
 
-          {/* Prominent Add Expense Button */}
+          {/* Add Expense Primary CTA Button */}
           <button
             onClick={onOpenAddExpense}
             className="btn-primary text-xs"
           >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span className="hidden sm:inline">Add Expense</span>
-            <span className="sm:hidden">Add</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Add expense</span>
           </button>
 
-          {/* User Profile Avatar with Dropdown */}
+          {/* User Profile Avatar with Clean Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-full bg-[#DCE7FA] border border-[#BACDF2] hover:ring-2 hover:ring-[#BACDF2] flex items-center justify-center text-xs font-bold text-[#2A4B82] shadow-sm select-none transition-all cursor-pointer"
-              title="User Account & Settings"
+              className="w-8 h-8 rounded-full bg-[#0F141C] text-white flex items-center justify-center text-xs font-bold shadow-xs active:scale-[0.98] transition-all"
+              title="User profile"
             >
-              {displayName ? displayName.charAt(0).toUpperCase() : 'A'}
+              {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
             </button>
-
             {showUserMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowUserMenu(false)}
-                />
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#EDE8E0] shadow-card p-1.5 z-50 animate-in text-xs space-y-1">
-                  <div className="px-3 py-2 border-b border-[#EDE8E0]">
-                    <div className="font-bold text-[#181D26] truncate">{displayName || 'My Account'}</div>
-                    <div className="text-[10px] text-[#7F899F] truncate">{userEmail || 'Local Secure Vault'}</div>
+                <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-lg py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <div className="text-xs font-bold text-[#0F141C] truncate">{displayName || 'User'}</div>
+                    {userEmail && <div className="text-[11px] text-slate-500 truncate">{userEmail}</div>}
                   </div>
-
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onResetCleanSlate?.();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-[#D4952B] hover:bg-[#FAF8F5] font-semibold flex items-center gap-2"
-                  >
-                    <span>✨</span>
-                    <span>Reset to Clean Slate (₹0)</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onSignOut?.();
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-[#E06D53] hover:bg-red-50 font-semibold flex items-center gap-2"
-                  >
-                    <span>🚪</span>
-                    <span>Sign Out</span>
-                  </button>
+                  {onResetCleanSlate && (
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onResetCleanSlate();
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-[#E11D48] hover:bg-red-50 transition-colors"
+                    >
+                      Reset to clean state
+                    </button>
+                  )}
+                  {onSignOut && (
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        onSignOut();
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  )}
                 </div>
               </>
             )}
           </div>
         </div>
-
       </div>
     </header>
   );

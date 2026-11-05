@@ -9,7 +9,6 @@ import {
   Sparkles,
   Landmark,
   Settings as SettingsIcon,
-  Leaf,
 } from 'lucide-react';
 import { NavTab } from './BottomNav';
 
@@ -37,21 +36,21 @@ const PRIMARY_NAV: NavItem[] = [
 
 export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentTab, onSelectTab }) => {
   return (
-    <aside className="hidden lg:flex w-64 bg-[#141820] text-slate-300 flex-col justify-between p-6 h-screen sticky top-0 border-r border-[#222936] select-none z-30 overflow-y-auto">
+    <aside className="hidden lg:flex w-64 bg-[#0F141C] text-slate-300 flex-col justify-between p-6 h-screen sticky top-0 border-r border-slate-800/80 select-none z-30 overflow-y-auto">
       {/* Brand Header */}
       <div>
-        <div className="flex items-center gap-3 px-3 py-2 mb-8">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#D4952B] to-[#B87D1E] flex items-center justify-center text-white shadow-gold-glow">
-            <Leaf className="w-4 h-4 fill-white" />
+        <div className="flex items-center gap-3 px-2 py-2 mb-8">
+          <div className="w-8 h-8 rounded-xl bg-white text-[#0F141C] flex items-center justify-center font-bold text-sm shadow-sm">
+            <span>₹</span>
           </div>
           <div>
-            <span className="font-extrabold text-lg tracking-wider text-white">PAISA</span>
-            <span className="block text-[10px] text-slate-400 font-medium tracking-tight">Your Money Reality Check</span>
+            <span className="font-bold text-base tracking-tight text-white">PAISA</span>
+            <span className="block text-[11px] text-slate-400 font-medium">Daily reality check</span>
           </div>
         </div>
 
         {/* Main Navigation Links */}
-        <nav className="space-y-1.5">
+        <nav className="space-y-1">
           {PRIMARY_NAV.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -59,20 +58,20 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentTab, onSe
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                   isActive
-                    ? 'bg-[#222936] text-[#F5C065] shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-[#1B212C]'
-                }`}
+                    ? 'bg-slate-800 text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                } focus-visible:ring-2 focus-visible:ring-white`}
               >
                 <Icon
                   className={`w-4 h-4 transition-colors ${
-                    isActive ? 'text-[#F5C065]' : 'text-slate-400 group-hover:text-slate-200'
+                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 />
                 <span>{item.label}</span>
                 {isActive && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#D4952B]" />
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#059669]" />
                 )}
               </button>
             );
@@ -81,18 +80,18 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ currentTab, onSe
       </div>
 
       {/* Bottom Settings Link */}
-      <div className="pt-4 border-t border-[#222936]">
+      <div className="pt-4 border-t border-slate-800/80">
         <button
           onClick={() => onSelectTab('settings')}
-          className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
             currentTab === 'settings'
-              ? 'bg-[#222936] text-[#F5C065] font-bold'
-              : 'text-slate-400 hover:text-slate-100 hover:bg-[#1B212C]'
-          }`}
+              ? 'bg-slate-800 text-white font-bold'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+          } focus-visible:ring-2 focus-visible:ring-white`}
         >
           <SettingsIcon
             className={`w-4 h-4 ${
-              currentTab === 'settings' ? 'text-[#F5C065]' : 'text-slate-400'
+              currentTab === 'settings' ? 'text-white' : 'text-slate-400'
             }`}
           />
           <span>Settings</span>

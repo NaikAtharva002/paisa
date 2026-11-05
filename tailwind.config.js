@@ -59,9 +59,12 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Manrope', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        editorial: ['Plus Jakarta Sans', 'serif'],
+        editorial: ['Manrope', 'sans-serif'],
+      },
+      transitionTimingFunction: {
+        'decel': 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
       borderRadius: {
         '2xl': '1rem',

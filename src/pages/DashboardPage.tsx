@@ -150,32 +150,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* ── Clean Slate Guidance Card for New Users ── */}
       {isCleanSlate && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-[#FAF8F5] via-white to-[#FAF8F5] border-2 border-[#D4952B]/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-[#181D26]">Zero Imaginary Data • Real Money Only</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF7EE] text-[#2E8B57] border border-[#CDE5D7]">
-                Clean Slate Ready
+              <span className="text-sm font-bold text-[#0F141C]">Clean financial state</span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                Zero imaginary data
               </span>
             </div>
-            <p className="text-xs text-[#5E687D] max-w-xl leading-relaxed">
-              PAISA is initialized with ₹0 balances and zero fabricated transactions. Import your bank statement (Excel, PDF, CSV) or log your first expense to activate your real-time daily spending intelligence.
+            <p className="text-xs text-slate-500 max-w-xl leading-relaxed">
+              PAISA starts from absolute zero. Import your actual bank statement (Excel, PDF, CSV) or log your first expense to activate your real-time daily spending intelligence.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onOpenImport}
-              className="px-4 py-2 rounded-xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#262D3B] transition-all flex items-center gap-1.5 shadow-xs"
+              className="btn-primary text-xs"
             >
               <Upload className="w-3.5 h-3.5 text-[#D4952B]" />
-              <span>Import Statement</span>
+              <span>Import statement</span>
             </button>
             <button
               onClick={onOpenAddExpense}
-              className="px-4 py-2 rounded-xl bg-white border border-[#EDE8E0] text-[#181D26] text-xs font-bold hover:border-[#D4952B] transition-all flex items-center gap-1.5"
+              className="btn-secondary text-xs"
             >
-              <Plus className="w-3.5 h-3.5 text-[#2E8B57]" />
-              <span>Add Expense</span>
+              <Plus className="w-3.5 h-3.5 text-[#059669]" />
+              <span>Add expense</span>
             </button>
           </div>
         </div>

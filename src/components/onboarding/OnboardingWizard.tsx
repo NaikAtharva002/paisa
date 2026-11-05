@@ -60,7 +60,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] flex flex-col justify-center items-center p-4 sm:p-6 text-[#181D26]">
+    <div className="min-h-screen bg-[#F8F9FA] flex flex-col justify-center items-center p-4 sm:p-6 text-[#0F141C]">
       {/* Brand Header */}
       <div className="mb-6 text-center">
         <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-[#D4952B] to-[#E5AB4B] flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-[#D4952B]/20 mb-3">
@@ -68,7 +68,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
             <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
           </svg>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#181D26]">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0F141C]">
           Welcome to PAISA
         </h1>
         <p className="text-xs sm:text-sm text-[#7F899F] mt-1 font-medium">
@@ -85,15 +85,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                   step === s
-                    ? 'bg-[#181D26] text-white ring-4 ring-[#181D26]/10'
+                    ? 'bg-[#0F141C] text-white ring-4 ring-[#0F141C]/10'
                     : step > s
                     ? 'bg-[#2E8B57]/15 text-[#2E8B57]'
-                    : 'bg-[#FAF8F5] text-[#7F899F] border border-[#EDE8E0]'
+                    : 'bg-[#F8F9FA] text-[#7F899F] border border-[#EDE8E0]'
                 }`}
               >
                 {step > s ? <CheckCircle2 className="w-4 h-4 text-[#2E8B57]" /> : s}
               </div>
-              <span className={`text-xs font-semibold hidden sm:inline ${step === s ? 'text-[#181D26]' : 'text-[#7F899F]'}`}>
+              <span className={`text-xs font-semibold hidden sm:inline ${step === s ? 'text-[#0F141C]' : 'text-[#7F899F]'}`}>
                 {s === 1 ? 'Your Profile' : s === 2 ? 'Income & Budget' : 'Daily Reality'}
               </span>
             </div>
@@ -104,7 +104,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
         {step === 1 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>
-              <h2 className="text-lg font-bold text-[#181D26]">What should we call you?</h2>
+              <h2 className="text-lg font-bold text-[#0F141C]">What should we call you?</h2>
               <p className="text-xs text-[#7F899F] mt-0.5">We'll use this to greet you during your daily money check-ins.</p>
             </div>
 
@@ -117,7 +117,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="e.g. Atharva"
-                className="w-full px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-[#181D26] placeholder-[#9AA4B2] text-sm focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
+                className="w-full px-4 py-3 rounded-xl bg-[#F8F9FA] border border-[#EDE8E0] text-[#0F141C] placeholder-[#9AA4B2] text-sm focus:outline-none focus:border-[#0F141C] focus:bg-white transition-colors"
               />
             </div>
 
@@ -131,7 +131,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                   type="number"
                   value={monthlyIncome}
                   onChange={e => setMonthlyIncome(Math.max(0, Number(e.target.value)))}
-                  className="w-full pl-8 pr-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-[#181D26] font-mono-num font-bold text-base focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
+                  className="w-full pl-8 pr-4 py-3 rounded-xl bg-[#F8F9FA] border border-[#EDE8E0] text-[#0F141C] font-mono-num font-bold text-base focus:outline-none focus:border-[#0F141C] focus:bg-white transition-colors"
                 />
               </div>
               <p className="text-[11px] text-[#7F899F] mt-1.5 font-medium">
@@ -146,7 +146,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
               <select
                 value={salaryCreditDay}
                 onChange={e => setSalaryCreditDay(Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#EDE8E0] text-[#181D26] text-sm focus:outline-none focus:border-[#181D26] focus:bg-white transition-colors"
+                className="w-full px-4 py-3 rounded-xl bg-[#F8F9FA] border border-[#EDE8E0] text-[#0F141C] text-sm focus:outline-none focus:border-[#0F141C] focus:bg-white transition-colors"
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
                   <option key={day} value={day}>
@@ -172,7 +172,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
         {step === 2 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>
-              <h2 className="text-lg font-bold text-[#181D26]">Choose Your Daily Budget Calculation</h2>
+              <h2 className="text-lg font-bold text-[#0F141C]">Choose Your Daily Budget Calculation</h2>
               <p className="text-xs text-[#7F899F] mt-0.5">
                 How would you like Paisa to calculate your daily spending target?
               </p>
@@ -185,11 +185,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   budgetingMode === 'spendable_income'
                     ? 'border-[#D4952B] bg-[#FCF8EE] shadow-xs'
-                    : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+                    : 'border-[#EDE8E0] bg-[#F8F9FA] hover:border-[#DFD7C7]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-sm text-[#181D26]">1. Spendable Income (Recommended)</div>
+                  <div className="font-bold text-sm text-[#0F141C]">1. Spendable Income (Recommended)</div>
                   <div className="text-sm font-extrabold text-[#2E8B57] font-mono-num">
                     {formatINR(previewSpendableDaily)}/day
                   </div>
@@ -206,7 +206,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                         type="number"
                         value={savingsTarget}
                         onChange={e => setSavingsTarget(Number(e.target.value))}
-                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#181D26]"
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#0F141C]"
                       />
                     </div>
                     <div>
@@ -215,7 +215,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                         type="number"
                         value={fixedCommitments}
                         onChange={e => setFixedCommitments(Number(e.target.value))}
-                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#181D26]"
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#0F141C]"
                       />
                     </div>
                   </div>
@@ -228,12 +228,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   budgetingMode === 'income_equivalent'
                     ? 'border-[#D4952B] bg-[#FCF8EE] shadow-xs'
-                    : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+                    : 'border-[#EDE8E0] bg-[#F8F9FA] hover:border-[#DFD7C7]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-sm text-[#181D26]">2. Income Equivalent</div>
-                  <div className="text-sm font-extrabold text-[#181D26] font-mono-num">
+                  <div className="font-bold text-sm text-[#0F141C]">2. Income Equivalent</div>
+                  <div className="text-sm font-extrabold text-[#0F141C] font-mono-num">
                     {formatINR(previewDailyIncomeEquivalent)}/day
                   </div>
                 </div>
@@ -252,12 +252,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                 className={`p-4 rounded-2xl border cursor-pointer transition-all ${
                   budgetingMode === 'custom_limit'
                     ? 'border-[#D4952B] bg-[#FCF8EE] shadow-xs'
-                    : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+                    : 'border-[#EDE8E0] bg-[#F8F9FA] hover:border-[#DFD7C7]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-sm text-[#181D26]">3. Custom Daily Limit</div>
-                  <div className="text-sm font-extrabold text-[#181D26] font-mono-num">
+                  <div className="font-bold text-sm text-[#0F141C]">3. Custom Daily Limit</div>
+                  <div className="text-sm font-extrabold text-[#0F141C] font-mono-num">
                     {formatINR(dailyBudgetOverride)}/day
                   </div>
                 </div>
@@ -272,7 +272,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                       type="number"
                       value={dailyBudgetOverride}
                       onChange={e => setDailyBudgetOverride(Number(e.target.value))}
-                      className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#181D26]"
+                      className="w-full mt-1 px-3 py-1.5 rounded-lg bg-white border border-[#EDE8E0] text-xs font-mono-num text-[#0F141C]"
                     />
                   </div>
                 )}
@@ -302,7 +302,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
         {step === 3 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>
-              <h2 className="text-lg font-bold text-[#181D26]">Nightly Reality Check Tone</h2>
+              <h2 className="text-lg font-bold text-[#0F141C]">Nightly Reality Check Tone</h2>
               <p className="text-xs text-[#7F899F] mt-0.5">
                 Every evening, Paisa summarizes your spending. How should it talk to you?
               </p>
@@ -321,25 +321,25 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }
                   className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                     preferredTone === item.id
                       ? 'border-[#D4952B] bg-[#FCF8EE] shadow-xs'
-                      : 'border-[#EDE8E0] bg-[#FAF8F5] hover:border-[#DFD7C7]'
+                      : 'border-[#EDE8E0] bg-[#F8F9FA] hover:border-[#DFD7C7]'
                   }`}
                 >
-                  <div className="font-bold text-xs text-[#181D26]">{item.title}</div>
+                  <div className="font-bold text-xs text-[#0F141C]">{item.title}</div>
                   <div className="text-[11px] text-[#7F899F] mt-1 leading-snug">{item.desc}</div>
                 </div>
               ))}
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] space-y-2">
-              <div className="text-xs font-bold text-[#181D26] flex items-center gap-1.5">
+            <div className="p-4 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] space-y-2">
+              <div className="text-xs font-bold text-[#0F141C] flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-[#D4952B]" />
                 <span>Your Daily Setup Summary</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs text-[#3D4658]">
-                <div>Monthly Take-home: <strong className="text-[#181D26] font-mono-num">{formatINR(monthlyIncome, false)}</strong></div>
+                <div>Monthly Take-home: <strong className="text-[#0F141C] font-mono-num">{formatINR(monthlyIncome, false)}</strong></div>
                 <div>Calculation: <strong className="text-[#2E8B57] capitalize">{budgetingMode.replace('_', ' ')}</strong></div>
-                <div>Tone: <strong className="text-[#181D26] capitalize">{preferredTone}</strong></div>
-                <div>Salary Credit: <strong className="text-[#181D26]">{salaryCreditDay}st of month</strong></div>
+                <div>Tone: <strong className="text-[#0F141C] capitalize">{preferredTone}</strong></div>
+                <div>Salary Credit: <strong className="text-[#0F141C]">{salaryCreditDay}st of month</strong></div>
               </div>
             </div>
 

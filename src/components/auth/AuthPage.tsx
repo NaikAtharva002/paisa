@@ -242,7 +242,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#181D26] flex flex-col justify-between selection:bg-[#D4952B]/20 selection:text-[#8C5D17]">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#0F141C] flex flex-col justify-between selection:bg-[#D4952B]/20 selection:text-[#8C5D17]">
       {/* Top Navbar */}
       <header className="w-full px-6 py-4 flex items-center justify-between border-b border-[#EDE8E0] bg-white/60 backdrop-blur-md">
         <div
@@ -253,7 +253,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <Leaf className="w-4 h-4 fill-white" />
           </div>
           <div>
-            <span className="font-black text-base tracking-tight text-[#181D26]">PAISA</span>
+            <span className="font-black text-base tracking-tight text-[#0F141C]">PAISA</span>
             <span className="ml-1.5 text-[11px] text-[#7F899F] font-semibold hidden sm:inline">
               Daily Money Reality Check
             </span>
@@ -263,7 +263,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         {onBackToLanding && (
           <button
             onClick={onBackToLanding}
-            className="text-xs font-bold text-[#5E687D] hover:text-[#181D26] transition-colors"
+            className="text-xs font-bold text-[#5E687D] hover:text-[#0F141C] transition-colors"
           >
             ← Back to Home
           </button>
@@ -275,7 +275,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         <div className="w-full max-w-md bg-white border border-[#EDE8E0] rounded-3xl p-6 sm:p-8 shadow-card space-y-5">
           {/* Header Title & Subtitle */}
           <div className="text-center space-y-1">
-            <h1 className="text-2xl font-black text-[#181D26] tracking-tight">
+            <h1 className="text-2xl font-black text-[#0F141C] tracking-tight">
               Welcome to PAISA
             </h1>
             <p className="text-xs text-[#7F899F] font-medium">
@@ -288,7 +288,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading || isLoading}
-            className="w-full py-3 px-4 rounded-2xl border border-[#EDE8E0] bg-white hover:bg-slate-50 text-[#181D26] text-xs font-bold transition-all flex items-center justify-center gap-3 shadow-xs hover:border-[#D4952B]/60 disabled:opacity-50"
+            className="w-full py-3 px-4 rounded-2xl border border-[#EDE8E0] bg-white hover:bg-slate-50 text-[#0F141C] text-xs font-bold transition-all flex items-center justify-center gap-3 shadow-xs hover:border-[#D4952B]/60 disabled:opacity-50"
           >
             {isGoogleLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-[#D4952B]" />
@@ -324,7 +324,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           </div>
 
           {/* Method Selector: Phone OTP vs Email */}
-          <div className="flex rounded-2xl bg-[#FAF8F5] p-1 border border-[#EDE8E0]">
+          <div className="flex rounded-2xl bg-[#F8F9FA] p-1 border border-[#EDE8E0]">
             <button
               type="button"
               onClick={() => {
@@ -334,8 +334,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                 method === 'phone'
-                  ? 'bg-white text-[#181D26] shadow-xs'
-                  : 'text-[#7F899F] hover:text-[#181D26]'
+                  ? 'bg-white text-[#0F141C] shadow-xs'
+                  : 'text-[#7F899F] hover:text-[#0F141C]'
               }`}
             >
               <Phone className="w-3.5 h-3.5" />
@@ -350,8 +350,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
                 method === 'email'
-                  ? 'bg-white text-[#181D26] shadow-xs'
-                  : 'text-[#7F899F] hover:text-[#181D26]'
+                  ? 'bg-white text-[#0F141C] shadow-xs'
+                  : 'text-[#7F899F] hover:text-[#0F141C]'
               }`}
             >
               <Mail className="w-3.5 h-3.5" />
@@ -408,7 +408,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading || phoneNumber.replace(/\D/g, '').length < 10}
-                    className="w-full py-3 rounded-2xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+                    className="w-full py-3 rounded-2xl bg-[#0F141C] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>
@@ -477,7 +477,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       type="button"
                       disabled={resendCountdown > 0 || isLoading}
                       onClick={() => handleSendOtp()}
-                      className="inline-flex items-center gap-1 font-semibold text-[#5E687D] hover:text-[#181D26] disabled:opacity-40"
+                      className="inline-flex items-center gap-1 font-semibold text-[#5E687D] hover:text-[#0F141C] disabled:opacity-40"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>{resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend OTP'}</span>
@@ -487,7 +487,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading || otpCode.length < 6}
-                    className="w-full py-3 rounded-2xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+                    className="w-full py-3 rounded-2xl bg-[#0F141C] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
                   >
                     {isLoading ? (
                       <>
@@ -519,8 +519,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   }}
                   className={`pb-1 transition-all ${
                     mode === 'signin'
-                      ? 'border-b-2 border-[#D4952B] text-[#181D26]'
-                      : 'text-[#7F899F] hover:text-[#181D26]'
+                      ? 'border-b-2 border-[#D4952B] text-[#0F141C]'
+                      : 'text-[#7F899F] hover:text-[#0F141C]'
                   }`}
                 >
                   Sign In
@@ -533,8 +533,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   }}
                   className={`pb-1 transition-all ${
                     mode === 'signup'
-                      ? 'border-b-2 border-[#D4952B] text-[#181D26]'
-                      : 'text-[#7F899F] hover:text-[#181D26]'
+                      ? 'border-b-2 border-[#D4952B] text-[#0F141C]'
+                      : 'text-[#7F899F] hover:text-[#0F141C]'
                   }`}
                 >
                   Create Account
@@ -595,7 +595,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7F899F] hover:text-[#181D26]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7F899F] hover:text-[#0F141C]"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -604,7 +604,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                   {/* Password Strength Meter for Sign Up */}
                   {mode === 'signup' && password.length > 0 && (
                     <div className="pt-1 space-y-1">
-                      <div className="h-1.5 w-full bg-[#FAF8F5] rounded-full overflow-hidden border border-[#EDE8E0]">
+                      <div className="h-1.5 w-full bg-[#F8F9FA] rounded-full overflow-hidden border border-[#EDE8E0]">
                         <div
                           className={`h-full transition-all duration-300 ${strength.color}`}
                           style={{ width: `${strength.score}%` }}
@@ -640,7 +640,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 rounded-2xl bg-[#181D26] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 mt-2"
+                  className="w-full py-3 rounded-2xl bg-[#0F141C] text-white text-xs font-bold hover:bg-[#2A3140] transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 mt-2"
                 >
                   {isLoading ? (
                     <>
@@ -663,7 +663,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             <button
               type="button"
               onClick={onContinueOffline}
-              className="w-full py-2.5 rounded-2xl bg-[#FAF8F5] border border-[#EDE8E0] hover:border-[#D4952B] text-xs font-bold text-[#3D4658] hover:text-[#181D26] transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-2xl bg-[#F8F9FA] border border-[#EDE8E0] hover:border-[#D4952B] text-xs font-bold text-[#3D4658] hover:text-[#0F141C] transition-all flex items-center justify-center gap-2"
             >
               <WifiOff className="w-3.5 h-3.5 text-[#D4952B]" />
               <span>Continue Offline without Account (Guest)</span>
